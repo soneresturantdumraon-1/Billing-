@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sone Restaurant - Billing App</title>
+    <!-- Beautiful Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --ios-bg: #F2F2F7; --ios-card: #FFFFFF; --ios-text: #1C1C1E; --ios-text-muted: #8E8E93;
+            --ios-orange: #FF9500; --ios-orange-grad: linear-gradient(135deg, #FF9500 0%, #FF5E3A 100%);
+            --ios-green: #34C759; --ios-red: #FF3B30; --ios-blue: #007AFF;
+            --ios-input-bg: rgba(118, 118, 128, 0.12); --ios-separator: rgba(60, 60, 67, 0.1);
+            --radius-card: 16px; --radius-btn: 12px; --radius-input: 10px; --shadow-soft: 0 4px 14px rgba(0,0,0,0.05);
+        }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Poppins", sans-serif; margin: 0; background-color: var(--ios-bg); color: var(--ios-text); }
+        .top-header { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(10px); padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--ios-separator); position: sticky; top: 0; z-index: 100; }
+        .brand-banner { text-align:center; margin: 20px 20px 15px; }
+        .brand-banner h1 { font-family: 'Montserrat', sans-serif; font-size:26px; font-weight:800; color:var(--ios-text); margin:0 0 5px 0;}
+        .brand-banner p { font-size:13px; font-weight:500; color:var(--ios-text-muted); margin:0; }
+        .billing-grid { display: flex; gap: 20px; flex-wrap: wrap; margin: 0 20px 20px;}
+        .card { background: var(--ios-card); border-radius: var(--radius-card); padding: 20px; box-shadow: var(--shadow-soft); flex: 1; min-width: 300px; }
+        h3.section-title { margin: 0 0 15px 0; font-size: 18px; color: var(--ios-text); font-weight: 700; border-bottom: 1px solid var(--ios-separator); padding-bottom: 10px; display:flex; align-items:center; gap:8px;}
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 6px; font-weight: 600; font-size: 13px; color: var(--ios-text-muted); }
+        input[type="text"], input[type="number"] { width: 100%; padding: 12px; border: none; border-radius: var(--radius-input); background: var(--ios-input-bg); box-sizing: border-box; font-size: 16px; font-family: inherit; color: var(--ios-text); }
+        .btn-add { background: var(--ios-blue); color: white; border: none; padding: 14px; border-radius: var(--radius-btn); width: 100%; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 10px; transition:0.2s;}
+        .btn-add:hover { background: #005ecb; }
+        .autocomplete-container { position: relative; }
+        .autocomplete-items { position: absolute; border: 1px solid var(--ios-separator); z-index: 99; top: 100%; left: 0; right: 0; max-height: 200px; overflow-y: auto; background-color: var(--ios-card); border-radius: 8px; box-shadow: var(--shadow-soft); }
+        .autocomplete-items div { padding: 12px; cursor: pointer; border-bottom: 1px solid var(--ios-separator); font-size: 14px; display:flex; justify-content:space-between;}
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        th, td { padding: 12px 10px; text-align: left; border-bottom: 1px solid var(--ios-separator); }
+        th { color: var(--ios-text-muted); font-weight: 600; background: #f8f9fa; }
+        .btn-group { display: flex; gap: 10px; margin-top: 15px; }
+        .btn-checkout { background: var(--ios-green); flex: 2; color: white; border: none; padding: 15px; border-radius: var(--radius-btn); font-weight: 600; font-size: 16px; cursor: pointer; display:flex; justify-content:center; align-items:center; gap:8px;}
+        .btn-clear { background: var(--ios-bg); flex: 1; color: var(--ios-red); border: none; padding: 15px; border-radius: var(--radius-btn); font-weight: 600; cursor: pointer; display:flex; justify-content:center; align-items:center; gap:8px;}
+        
+        /* MODAL STYLES */
+        .modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); backdrop-filter: blur(4px); }
+        .modal-content { background-color: var(--ios-card); margin: 5% auto; padding: 25px; border-radius: 20px; width: 90%; max-width: 400px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+        .modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px;}
+        
+        /* SIDEBAR */
+        .sidebar { width: 260px; background-color: #FFFFFF; position: fixed; height: 100%; left: -260px; top: 0; z-index: 1001; transition: 0.3s; }
+        .sidebar.show { left: 0; }
+        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 1000; display: none; }
+        .overlay.show { display: block; }
+        .nav-links { list-style: none; padding: 15px 10px; margin: 0; }
+        .nav-links a { display: flex; align-items: center; padding: 12px 15px; color: var(--ios-text); text-decoration: none; font-weight: 500; font-size: 15px; border-radius: var(--radius-btn); cursor: pointer; }
+        .nav-links a.active { background: var(--ios-orange-grad); color: #fff; }
+        .tab-panel { display: none; padding: 10px 20px; }
+        .tab-panel.active { display: block; }
+
+        /* ======================================================== */
+        /* COLORFUL & UNIQUE CASH MEMO BILL DESIGN (Print/Preview)  */
+        /* ======================================================== */
+        .bill-container {
+            max-width: 400px;
+            margin: 0 auto;
+            border: 2px dashed #FF9500; 
+            padding: 20px; 
+            border-radius: 12px; 
+            background: #FFFAEA !important; /* असली कैश मेमो जैसा पीला रंग */
+            color: #333; 
+            font-family: 'Poppins', sans-serif;
+            box-shadow: 0 8px 25px rgba(255, 149, 0, 0.15);
+            position: relative;
+            overflow: hidden;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        .bill-container::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 6px;
+            background: linear-gradient(135deg, #FF9500 0%, #FF5E3A 100%) !important;
+            -webkit-print-color-adjust: exact; print-color-adjust: exact;
+        }
+        .bill-header { display: flex; justify-content: space-between; font-size: 13px; font-weight: 700; margin-bottom: 12px; border-bottom: 2px solid #FFD180; padding-bottom: 8px; color: #D32F2F; }
+        .bill-title { text-align: center; margin: 15px 0; }
+        .bill-title h2 { margin: 0 0 5px 0; font-family: 'Montserrat', sans-serif; font-size: 24px; font-weight: 800; color: #D32F2F; text-shadow: 1px 1px 0px rgba(0,0,0,0.05); }
+        .bill-title div { font-size: 12px; font-weight: 600; color: #666; }
+        .bill-info { display: flex; justify-content: space-between; margin-bottom: 15px; font-size: 13px; font-weight: 700; color: #444; background: #FFF3E0 !important; padding: 8px 10px; border-radius: 6px; -webkit-print-color-adjust: exact; print-color-adjust: exact;}
+        .print-table { width: 100%; border-collapse: collapse; margin-top: 5px; font-size: 13px; color: #222; }
+        .print-table th, .print-table td { border: 1px solid #FFD180; padding: 8px; }
+        .print-table th { background: linear-gradient(135deg, #FF9500, #FF5E3A) !important; color: white !important; text-align: left; -webkit-print-color-adjust: exact; print-color-adjust: exact; font-weight: 600; }
+        .print-table th:nth-child(2), .print-table td:nth-child(2) { text-align: center; }
+        .print-table th:last-child, .print-table td:last-child { text-align: right; }
+        .print-table tr:nth-child(even) td { background: #FFF3E0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        
+        .bill-totals { margin-top: 15px; font-weight: 700; font-size: 14px; color: #333; }
+        .bill-totals div { display: flex; justify-content: space-between; padding: 5px 10px; }
+        .bill-totals .grand-total { 
+            background: #34C759 !important; color: white !important; 
+            -webkit-print-color-adjust: exact; print-color-adjust: exact;
+            border-radius: 6px; margin-top: 8px; padding: 10px; font-size: 16px; 
+            box-shadow: 0 4px 10px rgba(52, 199, 89, 0.3); 
+        }
+        .bill-signature { margin-top: 40px; text-align: right; font-weight: 700; font-style: italic; color: #D32F2F; }
+        .bill-signature span { border-top: 2px dashed #FF9500; padding-top: 5px; display: inline-block; width: 120px; text-align: center; }
+
+        /* स्क्रीन पर प्रिंट एरिया को छुपाने के लिए */
+        #print-area { display: none; }
+
+        /* --- PRINT CSS --- */
+        @media print { 
+            @page { margin: 0; size: auto; } /* ब्राउज़र के डिफ़ॉल्ट मार्जिन को हटाता है */
+            body * { visibility: hidden; } 
+            
+            #print-area, #print-area * { visibility: visible; } 
+            #print-area { 
+                display: flex !important; 
+                justify-content: center; 
+                position: absolute; 
+                left: 0; top: 0; width: 100%;
+                padding: 15mm 10mm; 
+                box-sizing: border-box;
+                background: #fff;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            .bill-container {
+                width: 100%; max-width: 450px; /* प्रिंट में चौड़ाई सेट करने के लिए */
+                box-shadow: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
+    <div class="sidebar" id="sidebar">
+        <div style="padding: 20px; text-align: center; border-bottom: 1px solid #eee;">
+            <i class="fas fa-utensils" style="font-size: 24px; color:var(--ios-orange); margin-bottom:10px;"></i>
+            <h2 style="margin:0; font-family:'Montserrat';">Sone Restaurant</h2>
+        </div>
+        <ul class="nav-links">
+            <li><a class="active" onclick="openTab('billingTab', this)"><i class="fas fa-receipt" style="margin-right:10px;"></i> Bill Receipt</a></li>
+            <li><a onclick="openTab('historyTab', this)"><i class="fas fa-history" style="margin-right:10px;"></i> History</a></li>
+        </ul>
+    </div>
+
+    <div class="top-header">
+        <button onclick="toggleSidebar()" style="background:transparent; border:none; font-size:22px; color:var(--ios-orange); cursor:pointer;"><i class="fas fa-bars"></i></button>
+        <div style="font-weight: 600; color: var(--ios-text-muted); font-size:14px;"><i class="far fa-calendar-alt"></i> <span id="displayDate"></span></div>
+    </div>
+    
+    <div class="brand-banner">
+        <h1>Sone Restaurant</h1>
+        <p><i class="fas fa-map-marker-alt" style="color:var(--ios-orange);"></i> Dumraon Station Road, Dumraon</p>
+    </div>
+
+    <!-- BILLING TAB -->
+    <div id="billingTab" class="tab-panel active">
+        <div class="billing-grid">
+            <div class="card">
+                <h3 class="section-title"><i class="fas fa-search" style="color:var(--ios-blue);"></i> Add Item</h3>
+                <div class="form-group autocomplete-container">
+                    <label>Item Name (सर्च करें)</label>
+                    <input type="text" id="itemInput" placeholder="उदा: Mutton, Water..." autocomplete="off">
+                    <div id="autocompleteList" class="autocomplete-items"></div>
+                </div>
+                <div class="form-group"><label>Price (₹)</label><input type="number" id="priceInput" readonly style="opacity: 0.7;"></div>
+                <div class="form-group"><label>Quantity</label><input type="number" id="qtyInput" value="1" min="1"></div>
+                <button class="btn-add" onclick="addItemToBill()"><i class="fas fa-plus"></i> Add to Bill</button>
+            </div>
+
+            <div class="card" style="display:flex; flex-direction:column;">
+                <h3 class="section-title"><i class="fas fa-file-invoice" style="color:var(--ios-orange);"></i> Current Bill</h3>
+                <div style="overflow-y:auto; max-height:250px; margin-bottom:15px; border-bottom:1px solid #ccc;">
+                    <table id="billTable">
+                        <thead><tr><th>Item</th><th>Qty</th><th>Price</th><th>Total</th><th>X</th></tr></thead>
+                        <tbody id="billBody"></tbody>
+                    </table>
+                </div>
+                <div style="display:flex; justify-content:space-between; font-size:18px; font-weight:bold; margin-top:auto;">
+                    <span>Grand Total:</span><span style="color:var(--ios-green);">₹ <span id="grandTotal">0</span></span>
+                </div>
+                <div class="btn-group">
+                    <button class="btn-clear" onclick="clearBill()"><i class="fas fa-trash-alt"></i> Clear</button>
+                    <button class="btn-checkout" onclick="openCheckoutModal()"><i class="fas fa-print"></i> Print</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- HISTORY TAB -->
+    <div id="historyTab" class="tab-panel">
+        <div class="card">
+            <h3 class="section-title"><i class="fas fa-history" style="color:var(--ios-blue);"></i> आज का हिसाब</h3>
+            <input type="date" id="filterDate" onchange="loadHistory()" style="padding:10px; margin-bottom:15px; width:100%; border:none; background:var(--ios-input-bg); border-radius:10px; font-family:inherit;">
+            <div style="overflow-y:auto; max-height:400px;">
+                <table>
+                    <thead><tr><th>Bill No.</th><th>Total</th><th style="text-align:center;">Action</th></tr></thead>
+                    <tbody id="historyBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- CHECKOUT MODAL -->
+    <div id="checkoutModal" class="modal">
+        <div class="modal-content">
+            <h3 style="margin: 0 0 10px 0; text-align: center; color:var(--ios-text); font-family:'Montserrat';">Complete Payment</h3>
+            <div style="text-align: center; font-size: 28px; font-weight: 800; color: var(--ios-green); margin-bottom: 20px;">₹ <span id="modalGrandTotal">0</span></div>
+
+            <div class="form-group"><label>Customer Name (उधार के लिए)</label><input type="text" id="chkName" placeholder="नाम लिखें (Optional)"></div>
+            <div class="modal-grid">
+                <div class="form-group"><label>Cash Paid</label><input type="number" id="chkCash" oninput="calcUdhaar()"></div>
+                <div class="form-group"><label>Online Paid</label><input type="number" id="chkOnline" value="0" oninput="calcUdhaar()"></div>
+            </div>
+            <div class="form-group"><label>Discount</label><input type="number" id="chkDiscount" value="0" oninput="calcUdhaar()"></div>
+            <div id="udhaarAlert" style="display:none; text-align:center; font-weight:bold; color:var(--ios-red); margin-bottom:15px;">Balance (उधार): ₹ <span id="chkUdhaar">0</span></div>
+            <div style="display:flex; gap:10px;">
+                <button class="btn-clear" onclick="document.getElementById('checkoutModal').style.display='none'" style="flex:1;">Cancel</button>
+                <button class="btn-checkout" onclick="confirmCheckout()" style="flex:1;"><i class="fas fa-check-circle"></i> Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PREVIEW MODAL -->
+    <div id="previewModal" class="modal">
+        <div class="modal-content" style="max-width: 440px; background: #f8f9fa;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <h3 style="margin:0; font-family:'Montserrat';"><i class="fas fa-eye" style="color:var(--ios-blue);"></i> Bill Preview</h3>
+                <i class="fas fa-times" style="font-size:20px; color:#aaa; cursor:pointer;" onclick="closePreviewModal()"></i>
+            </div>
+            
+            <div id="previewReceiptBox" style="margin-bottom: 20px;">
+                <!-- Data will be injected here using getBillHTML -->
+            </div>
+            
+            <button class="btn-checkout" style="width:100%;" onclick="printFromPreview()"><i class="fas fa-print"></i> Print Bill</button>
+        </div>
+    </div>
+
+    <div id="print-area"></div>
+
+    <script>
+        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('show'); document.getElementById('overlay').classList.toggle('show'); }
+        function openTab(tabId, el) { 
+            document.querySelectorAll('.tab-panel').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.nav-links a').forEach(l => l.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active'); el.classList.add('active'); toggleSidebar();
+        }
+
+        let today = new Date();
+        let displayDate = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
+        document.getElementById('displayDate').innerText = displayDate;
+
+        // MENU DATA
+        const menuData = {
+            "Mutton Spl. (8 Pic)": 650, "Mutton Estu (2 Pic)": 220, "Mutton Curry (4 Pic)": 300, "Mutton Do Pyaza (4 Pic)": 320,
+            "Water Bottle 20": 20, "Thanda Bottle 30": 30, "Thanda Bottle 35": 35,
+            "Thanda 40": 40, "Thanda 45": 45, "Thanda 50": 50, "Thanda 60": 60, "Thanda 90": 90,
+            "Veg. Fried Rice": 170, "Egg Fried Rice": 190, "Chi. Fried Rice": 260, "Mushroom Fried Rice": 250, "Mix. Fried Rice": 270, "Paneer Fried Rice": 250,
+            "Veg. Manchurian (F)": 170, "Veg. Manchurian (H)": 110, "Paneer Chilly (F)": 220, "Paneer Chilly (H)": 140, "Chi. Chilly (B/L) (F)": 290, "Chi. Chilly (B/L) (H)": 170, "Chi. Chilly (B) (F)": 230, "Chi. Chilly (B) (H)": 150, "Chi. Manchurian": 280, "Chi. Lolliop (B/L) (F)": 310, "Mushroom Chilly (F)": 250, "Mushroom Chilly (H)": 150, "Sweet Corn Crispy": 110, "Baby Corn Crispry": 270,
+            "Fruit Cream": 90, "Khir": 80, "Curd": 80, "Kalajamun": 25, "Rasgulla": 20, "Tea Spl.": 20, "Coffee": 45,
+            "Fish Fry": 140, "Fish Curry": 150, "Fish Estu": 160, "Fish Masala": 160, "Fish Do Pyaza": 150,
+            "Chi. Estu": 190, "Chi. Curry": 160, "Chi. Do Payaza": 180, "Chi. Pasanda": 220, "Chi. Butter Masala": 200, "Chi. Masala": 200, "Chi. Moglai": 210, "Chi. Shahi Kurma": 210, "Chi. Kurma": 210, "Chi. Noorani": 230, "Chi. Dehati (F)": 550, "Chi. Dehati (H)": 320, "Chi. Murg Mussalam": 560, "Chi. Karahi": 220, "Chi. Kasha (F)": 510, "Chi. Tikka Butter Masala": 330, "Chi. Sone Spl. (F)": 570, "Chi. Sone Spl. (H)": 340,
+            "Tawa Roti": 10, "Tawa Butter Roti": 12, "Roti": 12, "Butter Roti": 15, "Naan": 60, "Butter Naan": 80, "T. Paratha": 70, "Plain Kulcha": 80, "Masala Kulcha": 110, "Aloo Paratha": 70, "Veg. Stuff Paratha": 100, "Paneer Stuff Paratha": 110, "Shahi Paratha": 130, "Sone Shahi Paratha": 140, "Shahi Naan": 130, "Chi. Moglai Paratha": 190, "Veg. Moglai Paratha": 120, "Veg. Stuff Naan": 120, "Paneer Stuff Naan": 140, "Garlic Naan": 90,
+            "Plain Rice": 100, "Jeera Rice": 110, "Onion Fry Rice": 120, "Veg. Pulao": 150, "Pease Pulao": 140, "Chicken Pulao": 230, "Veg. Biryani": 170, "Egg Biryani": 190, "Chicken Biryani": 220, "Veg. Shahi Pulao": 190, "Sone Special Pulao": 210,
+            "Plain Dal": 90, "Dal Fry": 110, "Dal Tarka": 120, "Dal Makhani": 140, "Dal Moglai": 160, "Dal Butter Fry": 130,
+            
