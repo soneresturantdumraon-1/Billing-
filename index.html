@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Sone Restaurant - Billing App</title>
+    
+    <!-- PWA Manifest Link (Yaha add kiya gaya hai) -->
+    <link rel="manifest" href="manifest.json">
+
     <!-- Beautiful Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- FontAwesome for Icons -->
@@ -262,4 +266,202 @@
             "Tawa Roti": 10, "Tawa Butter Roti": 12, "Roti": 12, "Butter Roti": 15, "Naan": 60, "Butter Naan": 80, "T. Paratha": 70, "Plain Kulcha": 80, "Masala Kulcha": 110, "Aloo Paratha": 70, "Veg. Stuff Paratha": 100, "Paneer Stuff Paratha": 110, "Shahi Paratha": 130, "Sone Shahi Paratha": 140, "Shahi Naan": 130, "Chi. Moglai Paratha": 190, "Veg. Moglai Paratha": 120, "Veg. Stuff Naan": 120, "Paneer Stuff Naan": 140, "Garlic Naan": 90,
             "Plain Rice": 100, "Jeera Rice": 110, "Onion Fry Rice": 120, "Veg. Pulao": 150, "Pease Pulao": 140, "Chicken Pulao": 230, "Veg. Biryani": 170, "Egg Biryani": 190, "Chicken Biryani": 220, "Veg. Shahi Pulao": 190, "Sone Special Pulao": 210,
             "Plain Dal": 90, "Dal Fry": 110, "Dal Tarka": 120, "Dal Makhani": 140, "Dal Moglai": 160, "Dal Butter Fry": 130,
+            "Tost and Butter": 60, "Tost Omlete": 90, "Omlete": 60, "Cholla Bhatura": 110, "Paneer Paratha": 110, "Veg. Sandwich": 100, "Paneer Sandwich": 130,
+            "Vegetable Pakora": 160, "Paneer Pakora": 240, "Chicken Pakora": 260, "Egg Pakora": 160, "Veg. Cutlete": 160, "Chicken Cutlete": 200, "Egg. Roll": 150, "Veg. Roll": 120, "Chicken Roll": 230, "Peanut Masala": 150, "Pappad Masala": 120, "Finger Chips": 130, "Govi Pakora": 140, "Onion Pakora": 150, "Chicken Fry": 160, "Fresh Paneer": 200, "Peanut": 120,
+            "Tomato Soup": 80, "Veg. Hot & Source Soup": 100, "Veg. Manchow Soup": 120, "Chicken Cream Soup": 140, "Chicken Hot & Source Soup": 170, "Chicken Manchow Soup": 150,
+            "Veg. Raita": 130, "Boondi Raita": 110, "Green Salad- L": 110, "Green Salad- S": 70,
+            "Chi. Goli Kabab": 260, "Paneer Goli Kabab": 250, "Veg. Goli Kabab": 220, "Chi. Ginger Kabab": 260, "Chi. Reshmi Kabab": 280, "Chi. Tandoori (F)": 450, "Chi. Tandoori (H)": 260, "Chi. Leg Kabab": 280, "Paneer Tikka": 250, "Chi. Tikka": 270,
+            "Egg. Curry": 110, "Egg Do Payaza": 120, "Egg Butter Masala": 140, "Egg Masala": 150, "Omlete Curry": 120, "Egg Bugiya": 80,
+            "Aloo Govi": 130, "Aloo Do Payaza": 140, "Aloo Parwal": 130, "Aloo Paneer": 150, "Aloo Matar": 130, "Aloo Palak": 130, "Mix Vegetable": 150, "Veg. Jhal Phrazy": 160, "Veg. Kofta Curry": 160, "Stuff Tomato": 160, "Stuff Capssicam": 160, "Veg. Navratan Kurma": 190, "Aloo Dam Kashmiri": 190, "Aloo Dam Banarsi": 180, "Vegetable Chat-Patta": 160, "Seasonal Veg. Bhujiya": 120, "Sone Spl. Veg.": 180,
+            "Paneer Masala": 200, "Paneer Butter Masala": 200, "Paneer Do Pyaza": 190, "Shahi Paneer": 210, "Paneer Bhujiya": 210, "Paneer Shahi Kurma": 230, "Paneer Pasanda": 220, "Paneer Karahi": 230, "Matar Paneer": 150, "Palak Paneer": 170, "Paneer Diwani": 250, "Malai Kofta": 210, "Sone Spl. Paneer": 270, "Sone Spl. Paneer Chat-Patta": 250, "Paneer Estu": 210, "Paneer Dehati (F)": 290,"Paneer Dehati (H)": 155, "Paneer Punjabi": 250,
+            "Mushroom Do Piyaza": 220, "Mushroom (B) Masala": 230, "Mushroom Masala": 230, "Mushroom Karahi": 240, "Mushroom Curry": 210, "Mushroom Estu": 220, "Mushroom Dehati": 300,
+            "Veg. Chowmein (H)": 110, "Veg. Chowmein (F)": 190, "Chicken Chowmein": 270, "Egg Chowmein": 230, "Paneer Chowmein": 240, "Mix Chowmein": 260, "Mushroom Chowmein": 250
+        };
+        const itemNames = Object.keys(menuData);
+        let billItems = []; let billCounter = 1; let currentPreviewBill = null;
+
+        window.onload = function() {
+            let s = JSON.parse(localStorage.getItem('sone_bills_isolated')) || [];
+            if(s.filter(b=>b.date===displayDate).length > 0) { billCounter = Math.max(...s.map(b=>b.billNo))+1; }
+            loadHistory();
+        }
+
+        const input = document.getElementById("itemInput");
+        const list = document.getElementById("autocompleteList");
+        input.addEventListener("input", function() {
+            list.innerHTML = ""; document.getElementById("priceInput").value = "";
+            if (!this.value) return;
+            itemNames.forEach(i => {
+                if (i.toLowerCase().includes(this.value.toLowerCase())) {
+                    let b = document.createElement("DIV");
+                    b.innerHTML = `<span>${i}</span><span style="color:var(--ios-orange); font-weight:bold;">₹ ${menuData[i]}</span><input type='hidden' value='${i}'>`;
+                    b.addEventListener("click", function() {
+                        input.value = this.getElementsByTagName("input")[0].value;
+                        document.getElementById("priceInput").value = menuData[input.value];
+                        list.innerHTML = ""; document.getElementById("qtyInput").focus();
+                    });
+                    list.appendChild(b);
+                }
+            });
+        });
+        document.addEventListener("click", e => { if(e.target !== input) list.innerHTML = ""; });
+        input.addEventListener("keydown", function(e) {
+            if (e.key === "Enter") {
+                e.preventDefault(); let match = itemNames.find(n => n.toLowerCase() === this.value.toLowerCase());
+                if(match) { this.value = match; document.getElementById("priceInput").value = menuData[match]; list.innerHTML = ""; document.getElementById("qtyInput").focus(); }
+            }
+        });
+        document.getElementById("qtyInput").addEventListener("keydown", e => { if(e.key==="Enter") { e.preventDefault(); addItemToBill(); }});
+
+        function addItemToBill() {
+            let n = document.getElementById("itemInput").value, p = parseFloat(document.getElementById("priceInput").value), q = parseInt(document.getElementById("qtyInput").value);
+            if(!n || isNaN(p) || isNaN(q) || q<=0) return alert("Valid item select karein!");
+            let idx = billItems.findIndex(i => i.name === n);
+            if(idx > -1) { billItems[idx].qty += q; billItems[idx].total = billItems[idx].qty * billItems[idx].price; } else { billItems.push({name:n, price:p, qty:q, total:p*q}); }
+            updateBillDisplay(); document.getElementById("itemInput").value=""; document.getElementById("priceInput").value=""; document.getElementById("qtyInput").value="1"; document.getElementById("itemInput").focus();
+        }
+
+        function updateBillDisplay() {
+            let tb = document.getElementById("billBody"); tb.innerHTML = ""; let gt = 0;
+            billItems.forEach((i, idx) => {
+                gt += i.total;
+                tb.innerHTML += `<tr><td>${i.name}</td><td>${i.qty}</td><td>${i.price}</td><td style="font-weight:bold;">${i.total}</td><td><button style="background:var(--ios-red);color:white;border:none;border-radius:6px;padding:5px 8px;cursor:pointer;" onclick="billItems.splice(${idx},1);updateBillDisplay();"><i class="fas fa-trash"></i></button></td></tr>`;
+            });
+            document.getElementById("grandTotal").innerText = gt;
+        }
+
+        function clearBill() { if(confirm("Clear order?")) { billItems = []; updateBillDisplay(); } }
+
+        function openCheckoutModal() {
+            if(billItems.length === 0) return alert("Bill khali hai!");
+            let gt = billItems.reduce((s,i) => s + i.total, 0);
+            document.getElementById('modalGrandTotal').innerText = gt;
+            document.getElementById('chkCash').value = gt; document.getElementById('chkOnline').value = 0; document.getElementById('chkDiscount').value = 0; document.getElementById('chkName').value = '';
+            calcUdhaar(); document.getElementById('checkoutModal').style.display = 'block';
+        }
+
+        function calcUdhaar() {
+            let gt = parseFloat(document.getElementById('modalGrandTotal').innerText) || 0;
+            let cash = parseFloat(document.getElementById('chkCash').value) || 0;
+            let online = parseFloat(document.getElementById('chkOnline').value) || 0;
+            let disc = parseFloat(document.getElementById('chkDiscount').value) || 0;
+            let bal = gt - disc - cash - online;
+            let a = document.getElementById('udhaarAlert');
+            if(bal > 0) { document.getElementById('chkUdhaar').innerText = bal; a.style.display = 'block'; } else { a.style.display = 'none'; }
+        }
+
+        function confirmCheckout() {
+            let gt = parseFloat(document.getElementById('modalGrandTotal').innerText)||0, cash = parseFloat(document.getElementById('chkCash').value)||0, online = parseFloat(document.getElementById('chkOnline').value)||0, disc = parseFloat(document.getElementById('chkDiscount').value)||0;
+            let name = document.getElementById('chkName').value.trim();
+            let bal = gt - disc - cash - online;
+            if(bal > 0 && name === '') return alert("उधार के लिए नाम ज़रूरी है!");
+
+            // ONLY LOCAL BILL HISTORY
+            let sb = JSON.parse(localStorage.getItem('sone_bills_isolated')) || [];
+            let nB = { id: Date.now(), billNo: billCounter, date: displayDate, time: new Date().toLocaleTimeString('en-US', {hour:'2-digit',minute:'2-digit'}), items: JSON.parse(JSON.stringify(billItems)), total: gt, paid: cash+online, disc: disc, udhaar: bal>0?bal:0, custName: name };
+            sb.push(nB); localStorage.setItem('sone_bills_isolated', JSON.stringify(sb));
+
+            generatePrintHtml(nB);
+            document.getElementById('checkoutModal').style.display = 'none';
+            setTimeout(() => { window.print(); billCounter++; billItems=[]; updateBillDisplay(); loadHistory(); }, 300);
+        }
+
+        // --- NEW BEAUTIFUL COLORED HTML GENERATOR FOR BOTH PREVIEW AND PRINT ---
+        function getBillHTML(billData) {
+            let html = `
+            <div class="bill-container">
+                <div class="bill-header">
+                    <span>CASH MEMO</span>
+                    <span><i class="fas fa-phone-alt"></i> Mob.: 9155745145</span>
+                </div>
+                <div class="bill-title">
+                    <h2><i class="fas fa-utensils"></i> SONE RESTAURANT</h2>
+                    <div>DUMRAON STATION ROAD, DUMRAON</div>
+                </div>
+                <div class="bill-info">
+                    <span>Bill No: <b>${billData.billNo}</b></span>
+                    <span>Date: <b>${billData.date}</b></span>
+                </div>
+                ${billData.custName ? `<div style="text-align:left; font-size:14px; font-weight:700; margin-bottom:12px; color:#D32F2F;">Customer Name: ${billData.custName}</div>` : ''}
+                <table class="print-table">
+                    <tr><th>PARTICULARS</th><th>QTY</th><th>AMOUNT (₹)</th></tr>`;
             
+            billData.items.forEach(i => {
+                html += `<tr><td>${i.name}</td><td>${i.qty}</td><td>${i.total}</td></tr>`;
+            });
+            
+            html += `
+                </table>
+                <div class="bill-totals">
+                    <div><span>Subtotal:</span><span>₹ ${billData.total}</span></div>`;
+            if(billData.disc > 0) html += `<div style="color:#D32F2F;"><span>Discount:</span><span>- ₹ ${billData.disc}</span></div>`;
+            if(billData.paid > 0) html += `<div style="color:#FF9500;"><span>Paid Amount:</span><span>₹ ${billData.paid}</span></div>`;
+            if(billData.udhaar > 0) html += `<div style="color:#D32F2F;"><span>Due Balance (उधार):</span><span>₹ ${billData.udhaar}</span></div>`;
+            
+            html += `
+                    <div class="grand-total">
+                        <span>GRAND TOTAL</span><span>₹ ${billData.total - billData.disc}</span>
+                    </div>
+                </div>
+                <div class="bill-signature">
+                    <span>Authorized Sign</span>
+                </div>
+                <div style="text-align:center; margin-top:20px; font-weight:800; font-size:13px; color:#D32F2F;">Thank You! Visit Again. <i class="fas fa-smile"></i></div>
+            </div>`;
+            return html;
+        }
+
+        function openPreviewModal(id) {
+            let sb = JSON.parse(localStorage.getItem('sone_bills_isolated')) || [];
+            let bill = sb.find(b => b.id === id);
+            if(bill) {
+                currentPreviewBill = bill;
+                document.getElementById('previewReceiptBox').innerHTML = getBillHTML(bill);
+                document.getElementById('previewModal').style.display = 'block';
+            }
+        }
+        function closePreviewModal() { document.getElementById('previewModal').style.display = 'none'; currentPreviewBill = null; }
+        
+        function printFromPreview() { 
+            if(currentPreviewBill) { 
+                generatePrintHtml(currentPreviewBill); 
+                closePreviewModal(); 
+                setTimeout(() => window.print(), 300); 
+            } 
+        }
+
+        function generatePrintHtml(billData) {
+            document.getElementById('print-area').innerHTML = getBillHTML(billData);
+        }
+
+        function loadHistory() {
+            let sb = JSON.parse(localStorage.getItem('sone_bills_isolated')) || [];
+            let tb = document.getElementById("historyBody"); tb.innerHTML = "";
+            sb.reverse().forEach(b => {
+                tb.innerHTML += `<tr><td><b>#${b.billNo}</b></td><td style="font-weight:600; color:var(--ios-green);">₹ ${b.total}</td>
+                <td style="display:flex; gap:10px;">
+                    <button onclick="openPreviewModal(${b.id})" style="background:var(--ios-blue);color:white;border:none;padding:6px 12px;border-radius:8px;cursor:pointer;"><i class="fas fa-eye"></i></button>
+                    <button onclick="deleteBill(${b.id})" style="background:var(--ios-red);color:white;border:none;padding:6px 12px;border-radius:8px;cursor:pointer;"><i class="fas fa-trash"></i></button>
+                </td></tr>`;
+            });
+        }
+        function deleteBill(id) {
+            if(confirm("Delete bill history?")) {
+                let sb = JSON.parse(localStorage.getItem('sone_bills_isolated')) || [];
+                localStorage.setItem('sone_bills_isolated', JSON.stringify(sb.filter(b=>b.id!==id))); loadHistory();
+            }
+        }
+    </script>
+    
+    <!-- Service Worker Script (Yaha add kiya gaya hai) -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(reg => console.log('Service Worker Registered!', reg))
+                    .catch(err => console.error('Service Worker Registration Failed!', err));
+            });
+        }
+    </script>
+</body>
+</html>
