@@ -107,7 +107,7 @@
 
         #print-area { display: none; }
         
-        #sync-badge { background: var(--ios-input-bg); padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 5px; color: var(--ios-green); }
+        #sync-badge { background: var(--ios-input-bg); padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 5px; color: var(--ios-green); transition: 0.3s;}
 
         @media print { 
             @page { margin: 0; size: auto; } 
@@ -127,19 +127,16 @@
     <!-- 1. LOGIN SCREEN -->
     <div id="login-screen">
         <div class="login-box">
-            <!-- Sone Restaurant Original Logo -->
             <img src="1000021089_2.jpg" alt="Sone Restaurant Logo" class="login-logo">
             
             <h2 style="margin:0 0 5px 0; color: #1C1C1E; font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 24px; text-transform: uppercase;">Sone</h2>
             <p style="color: #D32F2F; margin: 0 0 30px 0; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px;">Billing System</p>
             
-            <!-- Email Input -->
             <div style="position: relative; margin-bottom: 15px;">
                 <i class="fas fa-envelope" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #8E8E93; font-size: 15px;"></i>
                 <input type="email" id="login-email" placeholder="Email Address" class="login-input">
             </div>
             
-            <!-- Password Input -->
             <div style="position: relative; margin-bottom: 25px;">
                 <i class="fas fa-lock" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #8E8E93; font-size: 15px;"></i>
                 <input type="password" id="login-password" placeholder="Password" class="login-input">
@@ -155,7 +152,6 @@
         <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
         <div class="sidebar" id="sidebar">
             <div style="padding: 20px; text-align: center; border-bottom: 1px solid #eee;">
-                <!-- Updated sidebar logo -->
                 <img src="1000021089_2.jpg" alt="Logo" style="width: 60px; height: 60px; object-fit: cover; border-radius: 50%; border: 2px solid #D32F2F; margin-bottom: 10px;">
                 <h2 style="margin:0; font-family:'Montserrat'; font-size:18px;">Sone Restaurant</h2>
             </div>
@@ -165,7 +161,6 @@
                 <li><a onclick="openTab('menuUpdateTab', this)"><i class="fas fa-edit" style="margin-right:10px;"></i> Menu Update</a></li>
                 <li><a onclick="openTab('recycleBinTab', this)"><i class="fas fa-trash-restore" style="margin-right:10px;"></i> Recycle Bin</a></li>
                 <li><a onclick="openTab('backupRestoreTab', this)"><i class="fas fa-cloud-download-alt" style="margin-right:10px;"></i> Manual Backup</a></li>
-                <!-- LOGOUT BUTTON -->
                 <li style="margin-top:15px; border-top:1px solid #eee; padding-top:10px;">
                     <a onclick="logoutUser()" style="color: var(--ios-red); font-weight: 600; cursor: pointer;"><i class="fas fa-sign-out-alt" style="margin-right:10px; color:var(--ios-red);"></i> Logout</a>
                 </li>
@@ -344,6 +339,7 @@
         const appContainer = document.getElementById('app-container');
         const loginError = document.getElementById('login-error');
         const syncBadge = document.getElementById('sync-badge');
+        let realtimeChannel = null;
 
         async function loginUser() {
             const email = document.getElementById('login-email').value.trim();
@@ -357,12 +353,14 @@
             } else {
                 loginScreen.style.display = 'none';
                 appContainer.style.display = 'flex';
-                fetchOnlineData(); 
+                fetchOnlineData();
+                setupRealtimeListener(); 
             }
         }
 
         async function logoutUser() {
             await supabaseClient.auth.signOut();
+            if (realtimeChannel) supabaseClient.removeChannel(realtimeChannel);
             appContainer.style.display = 'none';
             loginScreen.style.display = 'flex';
             document.getElementById('login-email').value = '';
@@ -382,13 +380,25 @@
         window.addEventListener('online', () => { syncWithCloud(); });
         window.addEventListener('offline', () => { updateSyncStatus(false); });
 
-        // Nayi Table (billing_data) se Data lana
-        async function fetchOnlineData() {
+        // Supabase Realtime Listener (Isi se naya data apne aap aayega)
+        function setupRealtimeListener() {
+            if (realtimeChannel) return; // Prevent multiple listeners
+            realtimeChannel = supabaseClient
+                .channel('schema-db-changes')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'billing_data' }, (payload) => {
+                    console.log("Cloud update detected. Syncing...");
+                    updateSyncStatus(true, "Auto Updating...");
+                    setTimeout(() => fetchOnlineData(true), 1000); 
+                })
+                .subscribe();
+        }
+
+        async function fetchOnlineData(isAutoSync = false) {
             if(!navigator.onLine) {
                 updateSyncStatus(false);
                 return;
             }
-            updateSyncStatus(true, "Downloading...");
+            if(!isAutoSync) updateSyncStatus(true, "Downloading...");
             
             const { data, error } = await supabaseClient.from('billing_data').select('*').eq('id', 'sone_billing_state').single();
             
@@ -424,10 +434,9 @@
             }
         }
 
-        // Nayi Table (billing_data) me Data bhejna
         async function syncWithCloud() {
             if(!navigator.onLine) { updateSyncStatus(false); return; }
-            updateSyncStatus(true, "Syncing...");
+            updateSyncStatus(true, "Saving to Cloud...");
             
             let localData = {
                 bills: JSON.parse(localStorage.getItem('sone_bills_isolated')) || [],
@@ -441,9 +450,10 @@
                 .upsert({ id: 'sone_billing_state', app_data: localData });
                 
             if(!error) {
-                fetchOnlineData(); 
+                updateSyncStatus(true, "Synced");
             } else {
                 updateSyncStatus(false, "Sync Error");
+                console.error("Supabase Error:", error);
             }
         }
 
@@ -503,6 +513,7 @@
                 loginScreen.style.display = 'none';
                 appContainer.style.display = 'flex';
                 fetchOnlineData(); 
+                setupRealtimeListener();
             }
         }
 
