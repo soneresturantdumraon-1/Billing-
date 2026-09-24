@@ -9,7 +9,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
+    <!-- Supabase & html2canvas -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
         :root {
@@ -19,7 +21,20 @@
             --ios-input-bg: rgba(118, 118, 128, 0.12); --ios-separator: rgba(60, 60, 67, 0.1);
             --radius-card: 16px; --radius-btn: 12px; --radius-input: 10px; --shadow-soft: 0 4px 14px rgba(0,0,0,0.05);
         }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Poppins", sans-serif; margin: 0; background-color: var(--ios-bg); color: var(--ios-text); }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Poppins", sans-serif; margin: 0; background-color: var(--ios-bg); color: var(--ios-text); overflow-x: hidden;}
+        
+        /* LOGIN SCREEN STYLES */
+        #login-screen { position:fixed; top:0; left:0; width:100vw; height:100vh; background: #f4f5f7; z-index:9999; display:flex; align-items:center; justify-content:center; box-sizing:border-box; padding:20px; }
+        .login-box { background: #ffffff; padding: 40px 25px; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.08); border: 1px solid rgba(0,0,0,0.05); width: 100%; max-width: 360px; text-align: center; box-sizing: border-box; }
+        .login-logo { width: 100px; height: 100px; border-radius: 50%; object-fit: cover; margin: 0 auto 20px auto; display: block; box-shadow: 0 10px 20px rgba(0,0,0,0.1); border: 3px solid #D32F2F; background: white; padding: 5px; }
+        .login-input { width: 100%; padding: 14px 15px 14px 45px; border: 2px solid #E5E5EA; border-radius: 12px; box-sizing: border-box; font-size: 15px; background: #FFFFFF; outline: none; transition: border-color 0.3s; font-family: 'Poppins', sans-serif; color: #1C1C1E; font-weight: 500; }
+        .login-input:focus { border-color: #1C1C1E; }
+        .login-btn { width: 100%; padding: 15px; background: #1C1C1E; color: white; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; font-size: 16px; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2); transition: transform 0.2s; letter-spacing: 0.5px; margin-top: 10px; }
+        .login-btn:active { transform: scale(0.97); }
+
+        /* MAIN APP STYLES */
+        #app-container { display: none; flex-direction: column; width: 100%; min-height: 100vh; }
+        
         .top-header { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(10px); padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--ios-separator); position: sticky; top: 0; z-index: 100; }
         .brand-banner { text-align:center; margin: 20px 20px 15px; }
         .brand-banner h1 { font-family: 'Montserrat', sans-serif; font-size:26px; font-weight:800; color:var(--ios-text); margin:0 0 5px 0;}
@@ -91,6 +106,8 @@
         .bill-signature span { border-top: 2px dashed #FF9500; padding-top: 5px; display: inline-block; width: 120px; text-align: center; }
 
         #print-area { display: none; }
+        
+        #sync-badge { background: var(--ios-input-bg); padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 5px; color: var(--ios-green); }
 
         @media print { 
             @page { margin: 0; size: auto; } 
@@ -106,180 +123,333 @@
     </style>
 </head>
 <body>
-    <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
-    <div class="sidebar" id="sidebar">
-        <div style="padding: 20px; text-align: center; border-bottom: 1px solid #eee;">
-            <i class="fas fa-utensils" style="font-size: 24px; color:var(--ios-orange); margin-bottom:10px;"></i>
-            <h2 style="margin:0; font-family:'Montserrat';">Sone Restaurant</h2>
-        </div>
-        <ul class="nav-links">
-            <li><a class="active" onclick="openTab('billingTab', this)"><i class="fas fa-receipt" style="margin-right:10px;"></i> Bill Receipt</a></li>
-            <li><a onclick="openTab('historyTab', this)"><i class="fas fa-history" style="margin-right:10px;"></i> History</a></li>
-            <li><a onclick="openTab('menuUpdateTab', this)"><i class="fas fa-edit" style="margin-right:10px;"></i> Menu Update</a></li>
-            <li><a onclick="openTab('recycleBinTab', this)"><i class="fas fa-trash-restore" style="margin-right:10px;"></i> Recycle Bin</a></li>
-            <li><a onclick="openTab('backupRestoreTab', this)"><i class="fas fa-cloud-download-alt" style="margin-right:10px;"></i> Backup & Restore</a></li>
-        </ul>
-    </div>
 
-    <div class="top-header">
-        <button onclick="toggleSidebar()" style="background:transparent; border:none; font-size:22px; color:var(--ios-orange); cursor:pointer;"><i class="fas fa-bars"></i></button>
-        <div style="font-weight: 600; color: var(--ios-text-muted); font-size:14px;"><i class="far fa-calendar-alt"></i> <span id="displayDate"></span></div>
-    </div>
-    
-    <div class="brand-banner">
-        <h1>Sone Restaurant</h1>
-        <p><i class="fas fa-map-marker-alt" style="color:var(--ios-orange);"></i> Dumraon Station Road, Dumraon</p>
-    </div>
-
-    <!-- BILLING TAB -->
-    <div id="billingTab" class="tab-panel active">
-        <div class="billing-grid">
-            <div class="card">
-                <h3 class="section-title"><i class="fas fa-search" style="color:var(--ios-blue);"></i> Add Item</h3>
-                <div class="form-group autocomplete-container">
-                    <label>Item Name (सर्च करें)</label>
-                    <input type="text" id="itemInput" placeholder="उदा: Mutton, Water..." autocomplete="off">
-                    <div id="autocompleteList" class="autocomplete-items"></div>
-                </div>
-                <div class="form-group"><label>Full Price (₹)</label><input type="number" id="priceInput" readonly style="opacity: 0.7;"></div>
-                <div class="form-group">
-                    <label>Quantity (नंबर लिखें या Half ke liye 'H' likhein)</label>
-                    <input type="text" id="qtyInput" value="1" placeholder="Ex: 1, 2, or H">
-                </div>
-                <button class="btn-add" onclick="addItemToBill()"><i class="fas fa-plus"></i> Add to Bill</button>
-            </div>
-
-            <div class="card" style="display:flex; flex-direction:column;">
-                <h3 class="section-title"><i class="fas fa-file-invoice" style="color:var(--ios-orange);"></i> Current Bill</h3>
-                <div style="overflow-y:auto; max-height:250px; margin-bottom:15px; border-bottom:1px solid #ccc;">
-                    <table id="billTable">
-                        <thead><tr><th>Item</th><th>Qty</th><th>Price</th><th>Total</th><th style="text-align:center;">Action</th></tr></thead>
-                        <tbody id="billBody"></tbody>
-                    </table>
-                </div>
-                <div style="display:flex; justify-content:space-between; font-size:18px; font-weight:bold; margin-top:auto;">
-                    <span>Grand Total:</span><span style="color:var(--ios-green);">₹ <span id="grandTotal">0</span></span>
-                </div>
-                <div class="btn-group">
-                    <button class="btn-clear" onclick="clearBill()"><i class="fas fa-trash-alt"></i> Clear</button>
-                    <button class="btn-checkout" onclick="openCheckoutModal()"><i class="fas fa-print"></i> Print</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- HISTORY TAB -->
-    <div id="historyTab" class="tab-panel">
-        <div class="card">
-            <h3 class="section-title"><i class="fas fa-history" style="color:var(--ios-blue);"></i> आज का हिसाब</h3>
-            <input type="date" id="filterDate" onchange="loadHistory()" style="padding:10px; margin-bottom:15px; width:100%; border:none; background:var(--ios-input-bg); border-radius:10px; font-family:inherit;">
-            <div style="overflow-y:auto; max-height:400px;">
-                <table>
-                    <thead><tr><th>Bill No.</th><th>Total</th><th style="text-align:center;">Action</th></tr></thead>
-                    <tbody id="historyBody"></tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <!-- MENU UPDATE TAB -->
-    <div id="menuUpdateTab" class="tab-panel">
-        <div class="card">
-            <h3 class="section-title"><i class="fas fa-plus-circle" style="color:var(--ios-green);"></i> Add / Edit Menu Item</h3>
-            <p style="font-size:12px; color:#666; margin-top:-10px;">Naya item add karein ya list se edit (✏️) dabayein.</p>
-            <div class="form-group"><label>Item Name</label><input type="text" id="newMenuName" placeholder="Ex: Chicken Lollypop"></div>
-            <div class="form-group"><label>Price (₹)</label><input type="number" id="newMenuPrice" placeholder="Ex: 250"></div>
-            <button class="btn-add" onclick="saveMenuItem()"><i class="fas fa-save"></i> Save Item</button>
+    <!-- 1. LOGIN SCREEN -->
+    <div id="login-screen">
+        <div class="login-box">
+            <!-- Sone Restaurant Original Logo -->
+            <img src="1000021089_2.jpg" alt="Sone Restaurant Logo" class="login-logo">
             
-            <!-- NEW BUTTON: SAVE CURRENT AS ORIGINAL -->
-            <button class="btn-checkout" style="margin-top:15px; width:100%; border:none; background:var(--ios-green);" onclick="makeMenuPermanent()"><i class="fas fa-lock"></i> Save Current Menu as Original</button>
-            <!-- OLD BUTTON: RESTORE ORIGINAL -->
-            <button class="btn-clear" style="margin-top:10px; width:100%; border:1px solid var(--ios-red);" onclick="restoreDefaultMenu()"><i class="fas fa-sync"></i> Restore Original Menu</button>
+            <h2 style="margin:0 0 5px 0; color: #1C1C1E; font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 24px; text-transform: uppercase;">Sone</h2>
+            <p style="color: #D32F2F; margin: 0 0 30px 0; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px;">Billing System</p>
+            
+            <!-- Email Input -->
+            <div style="position: relative; margin-bottom: 15px;">
+                <i class="fas fa-envelope" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #8E8E93; font-size: 15px;"></i>
+                <input type="email" id="login-email" placeholder="Email Address" class="login-input">
+            </div>
+            
+            <!-- Password Input -->
+            <div style="position: relative; margin-bottom: 25px;">
+                <i class="fas fa-lock" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #8E8E93; font-size: 15px;"></i>
+                <input type="password" id="login-password" placeholder="Password" class="login-input">
+            </div>
+            
+            <button onclick="loginUser()" class="login-btn">LOGIN SECURELY</button>
+            <p id="login-error" style="color: #D32F2F; font-size: 13px; margin-top: 15px; font-weight: 600; min-height: 20px;"></p>
+        </div>
+    </div>
+
+    <!-- 2. MAIN APP CONTAINER -->
+    <div id="app-container">
+        <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
+        <div class="sidebar" id="sidebar">
+            <div style="padding: 20px; text-align: center; border-bottom: 1px solid #eee;">
+                <!-- Updated sidebar logo -->
+                <img src="1000021089_2.jpg" alt="Logo" style="width: 60px; height: 60px; object-fit: cover; border-radius: 50%; border: 2px solid #D32F2F; margin-bottom: 10px;">
+                <h2 style="margin:0; font-family:'Montserrat'; font-size:18px;">Sone Restaurant</h2>
+            </div>
+            <ul class="nav-links">
+                <li><a class="active" onclick="openTab('billingTab', this)"><i class="fas fa-receipt" style="margin-right:10px;"></i> Bill Receipt</a></li>
+                <li><a onclick="openTab('historyTab', this)"><i class="fas fa-history" style="margin-right:10px;"></i> History</a></li>
+                <li><a onclick="openTab('menuUpdateTab', this)"><i class="fas fa-edit" style="margin-right:10px;"></i> Menu Update</a></li>
+                <li><a onclick="openTab('recycleBinTab', this)"><i class="fas fa-trash-restore" style="margin-right:10px;"></i> Recycle Bin</a></li>
+                <li><a onclick="openTab('backupRestoreTab', this)"><i class="fas fa-cloud-download-alt" style="margin-right:10px;"></i> Manual Backup</a></li>
+                <!-- LOGOUT BUTTON -->
+                <li style="margin-top:15px; border-top:1px solid #eee; padding-top:10px;">
+                    <a onclick="logoutUser()" style="color: var(--ios-red); font-weight: 600; cursor: pointer;"><i class="fas fa-sign-out-alt" style="margin-right:10px; color:var(--ios-red);"></i> Logout</a>
+                </li>
+            </ul>
+        </div>
+
+        <div class="top-header">
+            <button onclick="toggleSidebar()" style="background:transparent; border:none; font-size:22px; color:#1C1C1E; cursor:pointer;"><i class="fas fa-bars"></i></button>
+            <div style="display: flex; gap:10px; align-items: center;">
+                <div id="sync-badge"><i class="fas fa-cloud-check"></i> Online</div>
+                <div style="font-weight: 600; color: var(--ios-text-muted); font-size:14px;"><i class="far fa-calendar-alt"></i> <span id="displayDate"></span></div>
+            </div>
         </div>
         
-        <div class="card" style="margin-top:20px;">
-            <h3 class="section-title"><i class="fas fa-list" style="color:var(--ios-orange);"></i> All Menu Items</h3>
-            <input type="text" id="searchMenu" onkeyup="filterMenuTable()" placeholder="Menu me khojein..." style="padding:10px; margin-bottom:10px; width:100%; border:1px solid #ddd; border-radius:8px; font-family:inherit;">
-            <div style="overflow-y:auto; max-height:400px;">
-                <table id="menuUpdateTable">
-                    <thead><tr><th>Item Name</th><th>Price</th><th style="text-align:center;">Action</th></tr></thead>
-                    <tbody id="menuUpdateBody"></tbody>
-                </table>
+        <div class="brand-banner">
+            <h1>Sone Restaurant</h1>
+            <p><i class="fas fa-map-marker-alt" style="color:#D32F2F;"></i> Dumraon Station Road, Dumraon</p>
+        </div>
+
+        <!-- BILLING TAB -->
+        <div id="billingTab" class="tab-panel active">
+            <div class="billing-grid">
+                <div class="card">
+                    <h3 class="section-title"><i class="fas fa-search" style="color:var(--ios-blue);"></i> Add Item</h3>
+                    <div class="form-group autocomplete-container">
+                        <label>Item Name (सर्च करें)</label>
+                        <input type="text" id="itemInput" placeholder="उदा: Mutton, Water..." autocomplete="off">
+                        <div id="autocompleteList" class="autocomplete-items"></div>
+                    </div>
+                    <div class="form-group"><label>Full Price (₹)</label><input type="number" id="priceInput" readonly style="opacity: 0.7;"></div>
+                    <div class="form-group">
+                        <label>Quantity (नंबर लिखें या Half ke liye 'H' likhein)</label>
+                        <input type="text" id="qtyInput" value="1" placeholder="Ex: 1, 2, or H">
+                    </div>
+                    <button class="btn-add" style="background:#1C1C1E;" onclick="addItemToBill()"><i class="fas fa-plus"></i> Add to Bill</button>
+                </div>
+
+                <div class="card" style="display:flex; flex-direction:column;">
+                    <h3 class="section-title"><i class="fas fa-file-invoice" style="color:var(--ios-orange);"></i> Current Bill</h3>
+                    <div style="overflow-y:auto; max-height:250px; margin-bottom:15px; border-bottom:1px solid #ccc;">
+                        <table id="billTable">
+                            <thead><tr><th>Item</th><th>Qty</th><th>Price</th><th>Total</th><th style="text-align:center;">Action</th></tr></thead>
+                            <tbody id="billBody"></tbody>
+                        </table>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; font-size:18px; font-weight:bold; margin-top:auto;">
+                        <span>Grand Total:</span><span style="color:var(--ios-green);">₹ <span id="grandTotal">0</span></span>
+                    </div>
+                    <div class="btn-group">
+                        <button class="btn-clear" onclick="clearBill()"><i class="fas fa-trash-alt"></i> Clear</button>
+                        <button class="btn-checkout" onclick="openCheckoutModal()"><i class="fas fa-print"></i> Print</button>
+                    </div>
+                </div>
             </div>
         </div>
-    </div>
 
-    <!-- RECYCLE BIN TAB -->
-    <div id="recycleBinTab" class="tab-panel">
-        <div class="card">
-            <h3 class="section-title"><i class="fas fa-trash-restore" style="color:var(--ios-red);"></i> Recycle Bin</h3>
-            <p style="font-size:12px; color:#666; margin-top:-10px;">Delete kiye gaye bills yaha aayenge. Inhe Restore karein ya hamesha ke liye Delete karein.</p>
-            <div style="overflow-y:auto; max-height:400px;">
-                <table>
-                    <thead><tr><th>Bill No.</th><th>Total</th><th style="text-align:center;">Action</th></tr></thead>
-                    <tbody id="trashBody"></tbody>
-                </table>
+        <!-- HISTORY TAB -->
+        <div id="historyTab" class="tab-panel">
+            <div class="card">
+                <h3 class="section-title"><i class="fas fa-history" style="color:var(--ios-blue);"></i> आज का हिसाब</h3>
+                <input type="date" id="filterDate" onchange="loadHistory()" style="padding:10px; margin-bottom:15px; width:100%; border:none; background:var(--ios-input-bg); border-radius:10px; font-family:inherit;">
+                <div style="overflow-y:auto; max-height:400px;">
+                    <table>
+                        <thead><tr><th>Bill No.</th><th>Total</th><th style="text-align:center;">Action</th></tr></thead>
+                        <tbody id="historyBody"></tbody>
+                    </table>
+                </div>
             </div>
         </div>
-    </div>
 
-    <!-- BACKUP & RESTORE TAB -->
-    <div id="backupRestoreTab" class="tab-panel">
-        <div class="card">
-            <h3 class="section-title"><i class="fas fa-cloud-download-alt" style="color:var(--ios-blue);"></i> Data Transfer</h3>
-            <p style="font-size:13px; color:#444;">Agar aap dusre mobile ya laptop me app chala rahe hain, toh yaha se purana data transfer karein.</p>
+        <!-- MENU UPDATE TAB -->
+        <div id="menuUpdateTab" class="tab-panel">
+            <div class="card">
+                <h3 class="section-title"><i class="fas fa-plus-circle" style="color:var(--ios-green);"></i> Add / Edit Menu Item</h3>
+                <p style="font-size:12px; color:#666; margin-top:-10px;">Naya item add karein ya list se edit (✏️) dabayein.</p>
+                <div class="form-group"><label>Item Name</label><input type="text" id="newMenuName" placeholder="Ex: Chicken Lollypop"></div>
+                <div class="form-group"><label>Price (₹)</label><input type="number" id="newMenuPrice" placeholder="Ex: 250"></div>
+                <button class="btn-add" style="background:#1C1C1E;" onclick="saveMenuItem()"><i class="fas fa-save"></i> Save Item</button>
+                
+                <button class="btn-checkout" style="margin-top:15px; width:100%; border:none; background:var(--ios-green);" onclick="makeMenuPermanent()"><i class="fas fa-lock"></i> Save Current Menu as Original</button>
+                <button class="btn-clear" style="margin-top:10px; width:100%; border:1px solid var(--ios-red);" onclick="restoreDefaultMenu()"><i class="fas fa-sync"></i> Restore Original Menu</button>
+            </div>
             
-            <div style="margin-top:20px; padding:15px; border:1px solid var(--ios-separator); border-radius:10px;">
-                <h4 style="margin:0 0 10px 0;">1. Backup Banayein</h4>
-                <p style="font-size:12px; color:#666; margin-top:0;">Is mobile ka saara data (Bills + Menu) save karein.</p>
-                <button class="btn-checkout" onclick="exportBackup()"><i class="fas fa-download"></i> Download Backup File</button>
-            </div>
-
-            <div style="margin-top:20px; padding:15px; border:1px solid var(--ios-separator); border-radius:10px;">
-                <h4 style="margin:0 0 10px 0;">2. Restore Karein</h4>
-                <p style="font-size:12px; color:#666; margin-top:0;">Laptop ya naye device me wo file yaha se select karein.</p>
-                <input type="file" id="importFile" accept=".json" style="margin-bottom:10px;">
-                <button class="btn-add" style="background:var(--ios-orange);" onclick="importBackup()"><i class="fas fa-upload"></i> Restore Data</button>
+            <div class="card" style="margin-top:20px;">
+                <h3 class="section-title"><i class="fas fa-list" style="color:var(--ios-orange);"></i> All Menu Items</h3>
+                <input type="text" id="searchMenu" onkeyup="filterMenuTable()" placeholder="Menu me khojein..." style="padding:10px; margin-bottom:10px; width:100%; border:1px solid #ddd; border-radius:8px; font-family:inherit;">
+                <div style="overflow-y:auto; max-height:400px;">
+                    <table id="menuUpdateTable">
+                        <thead><tr><th>Item Name</th><th>Price</th><th style="text-align:center;">Action</th></tr></thead>
+                        <tbody id="menuUpdateBody"></tbody>
+                    </table>
+                </div>
             </div>
         </div>
-    </div>
 
-    <!-- CHECKOUT MODAL -->
-    <div id="checkoutModal" class="modal">
-        <div class="modal-content">
-            <h3 style="margin: 0 0 10px 0; text-align: center; color:var(--ios-text); font-family:'Montserrat';">Complete Payment</h3>
-            <div style="text-align: center; font-size: 28px; font-weight: 800; color: var(--ios-green); margin-bottom: 20px;">₹ <span id="modalGrandTotal">0</span></div>
-            <div class="form-group"><label>Customer Name (उधार के लिए)</label><input type="text" id="chkName" placeholder="नाम लिखें (Optional)"></div>
-            <div class="modal-grid">
-                <div class="form-group"><label>Cash Paid</label><input type="number" id="chkCash" oninput="calcUdhaar()"></div>
-                <div class="form-group"><label>Online Paid</label><input type="number" id="chkOnline" value="0" oninput="calcUdhaar()"></div>
-            </div>
-            <div class="form-group"><label>Discount</label><input type="number" id="chkDiscount" value="0" oninput="calcUdhaar()"></div>
-            <div id="udhaarAlert" style="display:none; text-align:center; font-weight:bold; color:var(--ios-red); margin-bottom:15px;">Balance (उधार): ₹ <span id="chkUdhaar">0</span></div>
-            <div style="display:flex; gap:10px;">
-                <button class="btn-clear" onclick="document.getElementById('checkoutModal').style.display='none'" style="flex:1;">Cancel</button>
-                <button class="btn-checkout" onclick="confirmCheckout()" style="flex:1;"><i class="fas fa-check-circle"></i> Save</button>
+        <!-- RECYCLE BIN TAB -->
+        <div id="recycleBinTab" class="tab-panel">
+            <div class="card">
+                <h3 class="section-title"><i class="fas fa-trash-restore" style="color:var(--ios-red);"></i> Recycle Bin</h3>
+                <p style="font-size:12px; color:#666; margin-top:-10px;">Delete kiye gaye bills yaha aayenge. Inhe Restore karein ya hamesha ke liye Delete karein.</p>
+                <div style="overflow-y:auto; max-height:400px;">
+                    <table>
+                        <thead><tr><th>Bill No.</th><th>Total</th><th style="text-align:center;">Action</th></tr></thead>
+                        <tbody id="trashBody"></tbody>
+                    </table>
+                </div>
             </div>
         </div>
-    </div>
 
-    <!-- PREVIEW MODAL -->
-    <div id="previewModal" class="modal">
-        <div class="modal-content" style="max-width: 440px; background: #f8f9fa;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                <h3 style="margin:0; font-family:'Montserrat';"><i class="fas fa-eye" style="color:var(--ios-blue);"></i> Bill Preview</h3>
-                <i class="fas fa-times" style="font-size:20px; color:#aaa; cursor:pointer;" onclick="closePreviewModal()"></i>
+        <!-- BACKUP & RESTORE TAB -->
+        <div id="backupRestoreTab" class="tab-panel">
+            <div class="card">
+                <h3 class="section-title"><i class="fas fa-cloud-download-alt" style="color:var(--ios-blue);"></i> Data Transfer</h3>
+                <p style="font-size:13px; color:#444;">Agar aap dusre mobile ya laptop me app chala rahe hain, toh yaha se purana data transfer karein.</p>
+                
+                <div style="margin-top:20px; padding:15px; border:1px solid var(--ios-separator); border-radius:10px;">
+                    <h4 style="margin:0 0 10px 0;">1. Backup Banayein</h4>
+                    <p style="font-size:12px; color:#666; margin-top:0;">Is mobile ka saara data (Bills + Menu) save karein.</p>
+                    <button class="btn-checkout" onclick="exportBackup()"><i class="fas fa-download"></i> Download Backup File</button>
+                </div>
+
+                <div style="margin-top:20px; padding:15px; border:1px solid var(--ios-separator); border-radius:10px;">
+                    <h4 style="margin:0 0 10px 0;">2. Restore Karein</h4>
+                    <p style="font-size:12px; color:#666; margin-top:0;">Laptop ya naye device me wo file yaha se select karein.</p>
+                    <input type="file" id="importFile" accept=".json" style="margin-bottom:10px;">
+                    <button class="btn-add" style="background:#1C1C1E;" onclick="importBackup()"><i class="fas fa-upload"></i> Restore Data</button>
+                </div>
             </div>
-            <div id="previewReceiptBox" style="margin-bottom: 20px;"></div>
-            
-            <button class="btn-add" style="width:100%; margin-bottom:10px;" onclick="downloadBillImage()"><i class="fas fa-image"></i> Download Photo</button>
-            <button class="btn-checkout" style="width:100%;" onclick="printFromPreview()"><i class="fas fa-print"></i> Print Bill</button>
         </div>
-    </div>
 
-    <div id="print-area"></div>
+        <!-- CHECKOUT MODAL -->
+        <div id="checkoutModal" class="modal">
+            <div class="modal-content">
+                <h3 style="margin: 0 0 10px 0; text-align: center; color:var(--ios-text); font-family:'Montserrat';">Complete Payment</h3>
+                <div style="text-align: center; font-size: 28px; font-weight: 800; color: var(--ios-green); margin-bottom: 20px;">₹ <span id="modalGrandTotal">0</span></div>
+                <div class="form-group"><label>Customer Name (उधार के लिए)</label><input type="text" id="chkName" placeholder="नाम लिखें (Optional)"></div>
+                <div class="modal-grid">
+                    <div class="form-group"><label>Cash Paid</label><input type="number" id="chkCash" oninput="calcUdhaar()"></div>
+                    <div class="form-group"><label>Online Paid</label><input type="number" id="chkOnline" value="0" oninput="calcUdhaar()"></div>
+                </div>
+                <div class="form-group"><label>Discount</label><input type="number" id="chkDiscount" value="0" oninput="calcUdhaar()"></div>
+                <div id="udhaarAlert" style="display:none; text-align:center; font-weight:bold; color:var(--ios-red); margin-bottom:15px;">Balance (उधार): ₹ <span id="chkUdhaar">0</span></div>
+                <div style="display:flex; gap:10px;">
+                    <button class="btn-clear" onclick="document.getElementById('checkoutModal').style.display='none'" style="flex:1;">Cancel</button>
+                    <button class="btn-checkout" onclick="confirmCheckout()" style="flex:1;"><i class="fas fa-check-circle"></i> Save</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- PREVIEW MODAL -->
+        <div id="previewModal" class="modal">
+            <div class="modal-content" style="max-width: 440px; background: #f8f9fa;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                    <h3 style="margin:0; font-family:'Montserrat';"><i class="fas fa-eye" style="color:var(--ios-blue);"></i> Bill Preview</h3>
+                    <i class="fas fa-times" style="font-size:20px; color:#aaa; cursor:pointer;" onclick="closePreviewModal()"></i>
+                </div>
+                <div id="previewReceiptBox" style="margin-bottom: 20px;"></div>
+                
+                <button class="btn-add" style="width:100%; margin-bottom:10px; background:#1C1C1E;" onclick="downloadBillImage()"><i class="fas fa-image"></i> Download Photo</button>
+                <button class="btn-checkout" style="width:100%;" onclick="printFromPreview()"><i class="fas fa-print"></i> Print Bill</button>
+            </div>
+        </div>
+
+        <div id="print-area"></div>
+    </div> <!-- END APP CONTAINER -->
 
     <script>
+        // ==========================================
+        // 1. SUPABASE LOGIN & OFFLINE-FIRST SYNC
+        // ==========================================
+        const SUPABASE_URL = 'https://icvckjgiajrocllkyvcj.supabase.co'; 
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImljdmNramdpYWpyb2NsbGt5dmNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAxMjY3MzUsImV4cCI6MjEwNTcwMjczNX0.a6PBexftJdguGtaP1XrObklLnLAzgfhGZpnHFGs_hGs'; 
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        const loginScreen = document.getElementById('login-screen');
+        const appContainer = document.getElementById('app-container');
+        const loginError = document.getElementById('login-error');
+        const syncBadge = document.getElementById('sync-badge');
+
+        async function loginUser() {
+            const email = document.getElementById('login-email').value.trim();
+            const password = document.getElementById('login-password').value;
+            loginError.innerText = "Checking Details...";
+            
+            const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+            
+            if (error) {
+                loginError.innerText = "Error: " + error.message;
+            } else {
+                loginScreen.style.display = 'none';
+                appContainer.style.display = 'flex';
+                fetchOnlineData(); 
+            }
+        }
+
+        async function logoutUser() {
+            await supabaseClient.auth.signOut();
+            appContainer.style.display = 'none';
+            loginScreen.style.display = 'flex';
+            document.getElementById('login-email').value = '';
+            document.getElementById('login-password').value = '';
+        }
+
+        function updateSyncStatus(isOnline, text = null) {
+            if (isOnline) {
+                syncBadge.innerHTML = `<i class="fas fa-cloud-check"></i> ${text || 'Synced'}`;
+                syncBadge.style.color = 'var(--ios-green)';
+            } else {
+                syncBadge.innerHTML = `<i class="fas fa-cloud-download-alt"></i> Offline`;
+                syncBadge.style.color = 'var(--ios-orange)';
+            }
+        }
+
+        window.addEventListener('online', () => { syncWithCloud(); });
+        window.addEventListener('offline', () => { updateSyncStatus(false); });
+
+        // Nayi Table (billing_data) se Data lana
+        async function fetchOnlineData() {
+            if(!navigator.onLine) {
+                updateSyncStatus(false);
+                return;
+            }
+            updateSyncStatus(true, "Downloading...");
+            
+            const { data, error } = await supabaseClient.from('billing_data').select('*').eq('id', 'sone_billing_state').single();
+            
+            if (data && data.app_data) {
+                let localData = {
+                    bills: JSON.parse(localStorage.getItem('sone_bills_isolated')) || [],
+                    menu: JSON.parse(localStorage.getItem('sone_dynamic_menu')) || defaultMenuData,
+                    trash: JSON.parse(localStorage.getItem('sone_bills_trash')) || [],
+                    permanentMenu: JSON.parse(localStorage.getItem('sone_permanent_menu')) || null
+                };
+
+                let cloudData = data.app_data;
+                
+                if(cloudData.menu) {
+                    localStorage.setItem('sone_dynamic_menu', JSON.stringify(cloudData.menu));
+                    menuData = cloudData.menu;
+                    itemNames = Object.keys(menuData);
+                    renderMenuUpdateTable();
+                }
+                
+                let combinedBills = [...localData.bills];
+                (cloudData.bills || []).forEach(cb => {
+                    if(!combinedBills.find(lb => lb.id === cb.id)) combinedBills.push(cb);
+                });
+                localStorage.setItem('sone_bills_isolated', JSON.stringify(combinedBills));
+                
+                if(cloudData.trash) localStorage.setItem('sone_bills_trash', JSON.stringify(cloudData.trash));
+                
+                loadHistory();
+                updateSyncStatus(true);
+            } else {
+                updateSyncStatus(true); 
+            }
+        }
+
+        // Nayi Table (billing_data) me Data bhejna
+        async function syncWithCloud() {
+            if(!navigator.onLine) { updateSyncStatus(false); return; }
+            updateSyncStatus(true, "Syncing...");
+            
+            let localData = {
+                bills: JSON.parse(localStorage.getItem('sone_bills_isolated')) || [],
+                menu: JSON.parse(localStorage.getItem('sone_dynamic_menu')) || defaultMenuData,
+                trash: JSON.parse(localStorage.getItem('sone_bills_trash')) || [],
+                permanentMenu: JSON.parse(localStorage.getItem('sone_permanent_menu')) || null
+            };
+
+            const { error } = await supabaseClient
+                .from('billing_data') 
+                .upsert({ id: 'sone_billing_state', app_data: localData });
+                
+            if(!error) {
+                fetchOnlineData(); 
+            } else {
+                updateSyncStatus(false, "Sync Error");
+            }
+        }
+
+        // ==========================================
+        // 2. ORIGINAL BILLING APP LOGIC
+        // ==========================================
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('show'); document.getElementById('overlay').classList.toggle('show'); }
         function openTab(tabId, el) { 
             document.querySelectorAll('.tab-panel').forEach(t => t.classList.remove('active'));
@@ -293,7 +463,6 @@
         let displayDate = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
         document.getElementById('displayDate').innerText = displayDate;
 
-        // ORIGINAL HARDCODED MENU
         const defaultMenuData = {
             "Mutton Spl. (8 Pic)": 650, "Mutton Estu (2 Pic)": 220, "Mutton Curry (4 Pic)": 300, "Mutton Do Pyaza (4 Pic)": 320,
             "Water Bottle 20": 20, "Thanda Bottle 30": 30, "Thanda Bottle 35": 35,
@@ -322,10 +491,19 @@
         let itemNames = Object.keys(menuData);
         let billItems = []; let billCounter = 1; let currentPreviewBill = null;
 
-        window.onload = function() {
+        window.onload = async function() {
+            if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js').catch(()=>{}); }
+            
             let s = JSON.parse(localStorage.getItem('sone_bills_isolated')) || [];
             if(s.filter(b=>b.date===displayDate).length > 0) { billCounter = Math.max(...s.map(b=>b.billNo))+1; }
             loadHistory();
+
+            const { data } = await supabaseClient.auth.getSession();
+            if (data.session) {
+                loginScreen.style.display = 'none';
+                appContainer.style.display = 'flex';
+                fetchOnlineData(); 
+            }
         }
 
         const input = document.getElementById("itemInput");
@@ -385,14 +563,12 @@
             document.getElementById("itemInput").value=""; document.getElementById("priceInput").value=""; document.getElementById("qtyInput").value="1"; document.getElementById("itemInput").focus();
         }
 
-        // --- NAYA EDIT BILL ITEM FUNCTION ---
         function editBillItem(idx) {
             let item = billItems[idx];
             let originalName = item.name;
             let originalPrice = item.price;
             let qtyVal = item.qty;
 
-            // Agar pehle Half (H) karke add kiya tha, toh full wapas nikalna
             if(originalName.endsWith(" (Half)")) {
                 originalName = originalName.replace(" (Half)", "");
                 originalPrice = (item.price - 10) * 2;
@@ -403,7 +579,6 @@
             document.getElementById("priceInput").value = originalPrice;
             document.getElementById("qtyInput").value = qtyVal;
             
-            // Remove item from bill list so user can re-add it updated
             billItems.splice(idx, 1);
             updateBillDisplay();
             document.getElementById("qtyInput").focus();
@@ -454,7 +629,7 @@
 
             generatePrintHtml(nB);
             document.getElementById('checkoutModal').style.display = 'none';
-            setTimeout(() => { window.print(); billCounter++; billItems=[]; updateBillDisplay(); loadHistory(); }, 300);
+            setTimeout(() => { window.print(); billCounter++; billItems=[]; updateBillDisplay(); loadHistory(); syncWithCloud(); }, 300);
         }
 
         function getBillHTML(billData) {
@@ -542,7 +717,7 @@
                     trash.push(billToMove);
                     localStorage.setItem('sone_bills_trash', JSON.stringify(trash));
                     localStorage.setItem('sone_bills_isolated', JSON.stringify(sb.filter(b=>b.id!==id))); 
-                    loadHistory();
+                    loadHistory(); syncWithCloud();
                 }
             }
         }
@@ -568,7 +743,7 @@
                 sb.push(billToMove);
                 localStorage.setItem('sone_bills_isolated', JSON.stringify(sb));
                 localStorage.setItem('sone_bills_trash', JSON.stringify(trash.filter(b=>b.id!==id)));
-                loadTrash(); loadHistory(); alert("Bill wapas History me Restore ho gaya!");
+                loadTrash(); loadHistory(); syncWithCloud(); alert("Bill wapas History me Restore ho gaya!");
             }
         }
 
@@ -576,7 +751,7 @@
             if(confirm("Kya aap ise hamesha ke liye mitana chahte hain? (Data wapas nahi aayega)")) {
                 let trash = JSON.parse(localStorage.getItem('sone_bills_trash')) || [];
                 localStorage.setItem('sone_bills_trash', JSON.stringify(trash.filter(b=>b.id!==id)));
-                loadTrash();
+                loadTrash(); syncWithCloud();
             }
         }
 
@@ -614,8 +789,8 @@
             
             document.getElementById("newMenuName").value = "";
             document.getElementById("newMenuPrice").value = "";
-            renderMenuUpdateTable();
-            alert(`"${name}" menu me save ho gaya! (Agar ise hamesha ke liye original banana hai to "Save Current Menu as Original" dabayein)`);
+            renderMenuUpdateTable(); syncWithCloud();
+            alert(`"${name}" menu me save ho gaya!`);
         }
 
         function deleteMenuItem(name) {
@@ -623,32 +798,31 @@
                 delete menuData[name];
                 localStorage.setItem('sone_dynamic_menu', JSON.stringify(menuData));
                 itemNames = Object.keys(menuData);
-                renderMenuUpdateTable();
+                renderMenuUpdateTable(); syncWithCloud();
             }
         }
         
-        // NAYA FUNCTION: Naye menu ko original banane ke liye
         function makeMenuPermanent() {
             if(confirm("Kya aap is current menu ko 'Original Menu' banana chahte hain? Iske baad Restore karne par yehi items wapas aayenge.")) {
                 localStorage.setItem('sone_permanent_menu', JSON.stringify(menuData));
+                syncWithCloud();
                 alert("Current menu ab aapka Naya Original Menu ban gaya hai! 🔒");
             }
         }
 
-        // UPDATED FUNCTION: Original Menu wapas laane ke liye (Ab ye naye original ko bhi check karega)
         function restoreDefaultMenu() {
             if(confirm("Dhyan dein: Ye aapke menu ko Original menu jaisa kar dega. Jo naye item aapne 'Save as Original' nahi kiye hain wo delete ho jayenge. Jari rakhein?")) {
                 let permanentMenu = JSON.parse(localStorage.getItem('sone_permanent_menu'));
                 
                 if (permanentMenu) {
-                    menuData = JSON.parse(JSON.stringify(permanentMenu)); // Naya Original Menu
+                    menuData = JSON.parse(JSON.stringify(permanentMenu)); 
                 } else {
-                    menuData = JSON.parse(JSON.stringify(defaultMenuData)); // Purana Default Menu
+                    menuData = JSON.parse(JSON.stringify(defaultMenuData)); 
                 }
                 
                 localStorage.setItem('sone_dynamic_menu', JSON.stringify(menuData));
                 itemNames = Object.keys(menuData);
-                renderMenuUpdateTable();
+                renderMenuUpdateTable(); syncWithCloud();
                 alert("Original menu wapas aa gaya hai!");
             }
         }
@@ -694,6 +868,7 @@
                     if(data.trash) localStorage.setItem('sone_bills_trash', JSON.stringify(data.trash));
                     if(data.permanentMenu) localStorage.setItem('sone_permanent_menu', JSON.stringify(data.permanentMenu));
                     
+                    syncWithCloud();
                     alert("✅ Data safaltapurvak restore ho gaya hai! App reload ho raha hai...");
                     location.reload();
                 } catch(err) {
@@ -701,12 +876,6 @@
                 }
             };
             reader.readAsText(file);
-        }
-    </script>
-    
-    <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js'); });
         }
     </script>
 </body>
