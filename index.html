@@ -127,7 +127,8 @@
     <!-- 1. LOGIN SCREEN -->
     <div id="login-screen">
         <div class="login-box">
-            <img src="1000021089_2.jpg" alt="Sone Restaurant Logo" class="login-logo">
+            <!-- Yahan logo update kiya gaya hai -->
+            <img src="Sonelogo.png" alt="Sone Restaurant Logo" class="login-logo">
             
             <h2 style="margin:0 0 5px 0; color: #1C1C1E; font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 24px; text-transform: uppercase;">Sone</h2>
             <p style="color: #D32F2F; margin: 0 0 30px 0; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px;">Billing System</p>
@@ -152,7 +153,8 @@
         <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
         <div class="sidebar" id="sidebar">
             <div style="padding: 20px; text-align: center; border-bottom: 1px solid #eee;">
-                <img src="1000021089_2.jpg" alt="Logo" style="width: 60px; height: 60px; object-fit: cover; border-radius: 50%; border: 2px solid #D32F2F; margin-bottom: 10px;">
+                <!-- Yahan sidebar logo update kiya gaya hai -->
+                <img src="Sonelogo.png" alt="Logo" style="width: 60px; height: 60px; object-fit: cover; border-radius: 50%; border: 2px solid #D32F2F; margin-bottom: 10px;">
                 <h2 style="margin:0; font-family:'Montserrat'; font-size:18px;">Sone Restaurant</h2>
             </div>
             <ul class="nav-links">
@@ -221,6 +223,7 @@
         <div id="historyTab" class="tab-panel">
             <div class="card">
                 <h3 class="section-title"><i class="fas fa-history" style="color:var(--ios-blue);"></i> आज का हिसाब</h3>
+                <!-- Date Filter Input -->
                 <input type="date" id="filterDate" onchange="loadHistory()" style="padding:10px; margin-bottom:15px; width:100%; border:none; background:var(--ios-input-bg); border-radius:10px; font-family:inherit;">
                 <div style="overflow-y:auto; max-height:400px;">
                     <table>
@@ -320,7 +323,6 @@
                     <h3 style="margin:0; font-family:'Montserrat';"><i class="fas fa-eye" style="color:var(--ios-blue);"></i> Bill Preview</h3>
                     <i class="fas fa-times" style="font-size:20px; color:#aaa; cursor:pointer;" onclick="closePreviewModal()"></i>
                 </div>
-                <!-- YAHAN SCROLL BAR ADD KIYA GAYA HAI TAAKI LAMA BILL HONE PAR BUTTON NA CHHUPE -->
                 <div id="previewReceiptBox" style="margin-bottom: 20px; max-height: 50vh; overflow-y: auto; border: 1px solid #eee; padding: 5px;"></div>
                 
                 <button class="btn-add" style="width:100%; margin-bottom:10px; background:#1C1C1E;" onclick="downloadBillImage()"><i class="fas fa-image"></i> Download Photo</button>
@@ -733,10 +735,36 @@
             });
         }
 
+        // ==========================================
+        // HISTORY FILTER LOGIC (UPDATED)
+        // ==========================================
         function loadHistory() {
             let sb = JSON.parse(localStorage.getItem('sone_bills_isolated')) || [];
-            let tb = document.getElementById("historyBody"); tb.innerHTML = "";
-            sb.reverse().forEach(b => {
+            let tb = document.getElementById("historyBody"); 
+            tb.innerHTML = "";
+
+            // 1. Date Input se selected date nikalna
+            let filterValue = document.getElementById("filterDate").value;
+            let filteredBills = sb; // Default sabhi bills dikhayega
+
+            // 2. Agar koi date select ki gayi hai, tabhi filter apply karein
+            if (filterValue) {
+                // Input format (YYYY-MM-DD) ko Bill format (DD/MM/YYYY) mein badalna
+                let dateParts = filterValue.split('-'); 
+                let formattedDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`; 
+                
+                // 3. Sirf wahi bills filter karein jinki date format match ho
+                filteredBills = sb.filter(b => b.date === formattedDate);
+            }
+
+            // 4. Agar us din koi bill nahi hai toh message dikhayein
+            if (filteredBills.length === 0) {
+                tb.innerHTML = "<tr><td colspan='3' style='text-align:center; padding: 20px; color: #888;'>Is date par koi bill nahi hai.</td></tr>";
+                return;
+            }
+
+            // 5. Filter kiye gaye bills ko table mein dikhana
+            filteredBills.reverse().forEach(b => {
                 tb.innerHTML += `<tr><td><b>#${b.billNo}</b></td><td style="font-weight:600; color:var(--ios-green);">₹ ${b.total}</td>
                 <td style="display:flex; gap:10px;">
                     <button onclick="openPreviewModal(${b.id})" style="background:var(--ios-blue);color:white;border:none;padding:6px 12px;border-radius:8px;cursor:pointer;" title="View"><i class="fas fa-eye"></i></button>
