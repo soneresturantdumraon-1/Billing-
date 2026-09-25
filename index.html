@@ -127,7 +127,7 @@
     <!-- 1. LOGIN SCREEN -->
     <div id="login-screen">
         <div class="login-box">
-            <!-- Updated Logo: Sonelogo.png -->
+            <!-- Logo from previous update -->
             <img src="Sonelogo.png" alt="Sone Restaurant Logo" class="login-logo">
             
             <h2 style="margin:0 0 5px 0; color: #1C1C1E; font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 24px; text-transform: uppercase;">Sone</h2>
@@ -153,7 +153,7 @@
         <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
         <div class="sidebar" id="sidebar">
             <div style="padding: 20px; text-align: center; border-bottom: 1px solid #eee;">
-                <!-- Updated Sidebar Logo: Sonelogo.png -->
+                <!-- Sidebar Logo -->
                 <img src="Sonelogo.png" alt="Logo" style="width: 60px; height: 60px; object-fit: cover; border-radius: 50%; border: 2px solid #D32F2F; margin-bottom: 10px;">
                 <h2 style="margin:0; font-family:'Montserrat'; font-size:18px;">Sone Restaurant</h2>
             </div>
@@ -201,7 +201,17 @@
                 </div>
 
                 <div class="card" style="display:flex; flex-direction:column;">
-                    <h3 class="section-title"><i class="fas fa-file-invoice" style="color:var(--ios-orange);"></i> Current Bill</h3>
+                    <!-- Update: Bill No dalne ka manual option -->
+                    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--ios-separator); padding-bottom:10px; margin-bottom:10px;">
+                        <h3 style="margin:0; font-size: 18px; color: var(--ios-text); font-weight: 700; display:flex; align-items:center; gap:8px;">
+                            <i class="fas fa-file-invoice" style="color:var(--ios-orange);"></i> Current Bill
+                        </h3>
+                        <div style="display:flex; align-items:center; gap:5px;">
+                            <label style="margin:0; font-weight:bold; color:var(--ios-text-muted); font-size:13px;">Bill No:</label>
+                            <input type="number" id="manualBillNo" value="1" style="width:60px; padding:6px; text-align:center; border:1px solid #ccc; border-radius:6px; font-weight:bold; background:var(--ios-input-bg);">
+                        </div>
+                    </div>
+                    
                     <div style="overflow-y:auto; max-height:250px; margin-bottom:15px; border-bottom:1px solid #ccc;">
                         <table id="billTable">
                             <thead><tr><th>Item</th><th>Qty</th><th>Price</th><th>Total</th><th style="text-align:center;">Action</th></tr></thead>
@@ -325,6 +335,9 @@
                 </div>
                 <div id="previewReceiptBox" style="margin-bottom: 20px; max-height: 50vh; overflow-y: auto; border: 1px solid #eee; padding: 5px;"></div>
                 
+                <!-- Update: Edit Bill button add kiya gaya hai -->
+                <button class="btn-clear" style="width:100%; margin-bottom:10px; border:1px solid var(--ios-blue); color:var(--ios-blue); background:#e6f2ff;" onclick="editExistingBill()"><i class="fas fa-edit"></i> Edit Bill</button>
+                
                 <button class="btn-add" style="width:100%; margin-bottom:10px; background:#1C1C1E;" onclick="downloadBillImage()"><i class="fas fa-image"></i> Download Photo</button>
                 <button class="btn-checkout" style="width:100%;" onclick="printFromPreview()"><i class="fas fa-print"></i> Print Bill</button>
             </div>
@@ -433,6 +446,14 @@
                 if(cloudData.trash) localStorage.setItem('sone_bills_trash', JSON.stringify(cloudData.trash));
                 
                 loadHistory();
+                
+                // Update Manual Bill No box sync ke baad bhi
+                let s = JSON.parse(localStorage.getItem('sone_bills_isolated')) || [];
+                if(s.filter(b=>b.date===displayDate).length > 0) { 
+                    billCounter = Math.max(...s.filter(b=>b.date===displayDate).map(b=>b.billNo)) + 1; 
+                    document.getElementById('manualBillNo').value = billCounter;
+                }
+                
                 updateSyncStatus(true);
             } else {
                 updateSyncStatus(true); 
@@ -468,7 +489,10 @@
         function openTab(tabId, el) { 
             document.querySelectorAll('.tab-panel').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.nav-links a').forEach(l => l.classList.remove('active'));
-            document.getElementById(tabId).classList.add('active'); el.classList.add('active'); toggleSidebar();
+            document.getElementById(tabId).classList.add('active'); 
+            if(el) el.classList.add('active'); 
+            document.getElementById('sidebar').classList.remove('show');
+            document.getElementById('overlay').classList.remove('show');
             if(tabId === 'menuUpdateTab') renderMenuUpdateTable();
             if(tabId === 'recycleBinTab') loadTrash();
         }
@@ -509,7 +533,11 @@
             if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js').catch(()=>{}); }
             
             let s = JSON.parse(localStorage.getItem('sone_bills_isolated')) || [];
-            if(s.filter(b=>b.date===displayDate).length > 0) { billCounter = Math.max(...s.map(b=>b.billNo))+1; }
+            if(s.filter(b=>b.date===displayDate).length > 0) { 
+                billCounter = Math.max(...s.filter(b=>b.date===displayDate).map(b=>b.billNo)) + 1; 
+            }
+            document.getElementById('manualBillNo').value = billCounter; // Update: Bill Box default set
+            
             loadHistory();
 
             const { data } = await supabaseClient.auth.getSession();
@@ -661,14 +689,34 @@
             let name = document.getElementById('chkName').value.trim();
             let bal = gt - disc - cash - online;
             if(bal > 0 && name === '') return alert("उधार के लिए नाम ज़रूरी है!");
+            
+            // Update: Bill No. input se number uthana
+            let finalUserBillNo = parseInt(document.getElementById('manualBillNo').value);
+            if(isNaN(finalUserBillNo) || finalUserBillNo <= 0) {
+                finalUserBillNo = billCounter;
+            }
 
             let sb = JSON.parse(localStorage.getItem('sone_bills_isolated')) || [];
-            let nB = { id: Date.now(), billNo: billCounter, date: displayDate, time: new Date().toLocaleTimeString('en-US', {hour:'2-digit',minute:'2-digit'}), items: JSON.parse(JSON.stringify(billItems)), total: gt, paid: cash+online, disc: disc, udhaar: bal>0?bal:0, custName: name };
+            
+            // Agar same number ka bill aaj exist karta hai toh naya bana dega takraav bachane ke liye (optional safeguard)
+            let nB = { id: Date.now(), billNo: finalUserBillNo, date: displayDate, time: new Date().toLocaleTimeString('en-US', {hour:'2-digit',minute:'2-digit'}), items: JSON.parse(JSON.stringify(billItems)), total: gt, paid: cash+online, disc: disc, udhaar: bal>0?bal:0, custName: name };
             sb.push(nB); localStorage.setItem('sone_bills_isolated', JSON.stringify(sb));
 
             generatePrintHtml(nB);
             document.getElementById('checkoutModal').style.display = 'none';
-            setTimeout(() => { window.print(); billCounter++; billItems=[]; updateBillDisplay(); loadHistory(); syncWithCloud(); }, 300);
+            
+            setTimeout(() => { 
+                window.print(); 
+                
+                // Update counter and display
+                billCounter = Math.max(billCounter, finalUserBillNo) + 1;
+                document.getElementById('manualBillNo').value = billCounter;
+                
+                billItems=[]; 
+                updateBillDisplay(); 
+                loadHistory(); 
+                syncWithCloud(); 
+            }, 300);
         }
 
         function getBillHTML(billData) {
@@ -736,34 +784,59 @@
         }
 
         // ==========================================
-        // HISTORY FILTER LOGIC (UPDATED WITH DEFAULT TODAY'S DATE)
+        // UPDATE: EDIT EXISTING BILL LOGIC
+        // ==========================================
+        function editExistingBill() {
+            if(!currentPreviewBill) return;
+            
+            if(confirm("Kya aap is bill ko Edit karna chahte hain? (Naya save karne par purana wala list se hat jayega)")) {
+                // Bill items ko table mein load karna
+                billItems = JSON.parse(JSON.stringify(currentPreviewBill.items));
+                
+                // Manual bill box mein yahi purana number daalna
+                document.getElementById('manualBillNo').value = currentPreviewBill.billNo;
+                
+                // Purane bill ko history se mita dena taki dubara save karne pe duplicate na bane
+                let sb = JSON.parse(localStorage.getItem('sone_bills_isolated')) || [];
+                sb = sb.filter(b => b.id !== currentPreviewBill.id);
+                localStorage.setItem('sone_bills_isolated', JSON.stringify(sb));
+                
+                updateBillDisplay();
+                closePreviewModal();
+                
+                // User ko wapas Billing Tab par bhejna
+                openTab('billingTab', document.querySelector('.nav-links a:first-child'));
+                
+                syncWithCloud();
+                loadHistory();
+                alert("Bill wapas aa gaya hai! Ab isme item jodiye ya ghataiye aur wapas Save kariye.");
+            }
+        }
+
+        // ==========================================
+        // HISTORY FILTER LOGIC (UPDATED WITH ASCENDING ORDER #1, #2, #3...)
         // ==========================================
         function loadHistory() {
             let sb = JSON.parse(localStorage.getItem('sone_bills_isolated')) || [];
             let tb = document.getElementById("historyBody"); 
             tb.innerHTML = "";
 
-            // Default target date 'aaj ki date' (displayDate) par set karte hain
             let targetDate = displayDate; 
-
-            // Agar user ne calendar se koi dusri date select ki hai, toh usko use karein
             let filterValue = document.getElementById("filterDate").value;
             if (filterValue) {
                 let dateParts = filterValue.split('-'); 
                 targetDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`; 
             }
 
-            // Ab bills ko sirf targetDate ke hisaab se filter karein
             let filteredBills = sb.filter(b => b.date === targetDate);
 
-            // Agar us date par koi bill nahi hai
             if (filteredBills.length === 0) {
                 tb.innerHTML = "<tr><td colspan='3' style='text-align:center; padding: 20px; color: #888;'>Is date par koi bill nahi hai.</td></tr>";
                 return;
             }
 
-            // Filter kiye gaye bills ko list mein show karein
-            filteredBills.reverse().forEach(b => {
+            // UPDATE: .reverse() hata kar .sort() lagaya taaki 1, 2, 3 kram mein aaye
+            filteredBills.sort((a, b) => a.billNo - b.billNo).forEach(b => {
                 tb.innerHTML += `<tr><td><b>#${b.billNo}</b></td><td style="font-weight:600; color:var(--ios-green);">₹ ${b.total}</td>
                 <td style="display:flex; gap:10px;">
                     <button onclick="openPreviewModal(${b.id})" style="background:var(--ios-blue);color:white;border:none;padding:6px 12px;border-radius:8px;cursor:pointer;" title="View"><i class="fas fa-eye"></i></button>
