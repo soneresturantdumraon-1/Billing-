@@ -127,7 +127,7 @@
     <!-- 1. LOGIN SCREEN -->
     <div id="login-screen">
         <div class="login-box">
-            <!-- Yahan logo update kiya gaya hai -->
+            <!-- Updated Logo: Sonelogo.png -->
             <img src="Sonelogo.png" alt="Sone Restaurant Logo" class="login-logo">
             
             <h2 style="margin:0 0 5px 0; color: #1C1C1E; font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 24px; text-transform: uppercase;">Sone</h2>
@@ -153,7 +153,7 @@
         <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
         <div class="sidebar" id="sidebar">
             <div style="padding: 20px; text-align: center; border-bottom: 1px solid #eee;">
-                <!-- Yahan sidebar logo update kiya gaya hai -->
+                <!-- Updated Sidebar Logo: Sonelogo.png -->
                 <img src="Sonelogo.png" alt="Logo" style="width: 60px; height: 60px; object-fit: cover; border-radius: 50%; border: 2px solid #D32F2F; margin-bottom: 10px;">
                 <h2 style="margin:0; font-family:'Montserrat'; font-size:18px;">Sone Restaurant</h2>
             </div>
@@ -736,34 +736,33 @@
         }
 
         // ==========================================
-        // HISTORY FILTER LOGIC (UPDATED)
+        // HISTORY FILTER LOGIC (UPDATED WITH DEFAULT TODAY'S DATE)
         // ==========================================
         function loadHistory() {
             let sb = JSON.parse(localStorage.getItem('sone_bills_isolated')) || [];
             let tb = document.getElementById("historyBody"); 
             tb.innerHTML = "";
 
-            // 1. Date Input se selected date nikalna
-            let filterValue = document.getElementById("filterDate").value;
-            let filteredBills = sb; // Default sabhi bills dikhayega
+            // Default target date 'aaj ki date' (displayDate) par set karte hain
+            let targetDate = displayDate; 
 
-            // 2. Agar koi date select ki gayi hai, tabhi filter apply karein
+            // Agar user ne calendar se koi dusri date select ki hai, toh usko use karein
+            let filterValue = document.getElementById("filterDate").value;
             if (filterValue) {
-                // Input format (YYYY-MM-DD) ko Bill format (DD/MM/YYYY) mein badalna
                 let dateParts = filterValue.split('-'); 
-                let formattedDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`; 
-                
-                // 3. Sirf wahi bills filter karein jinki date format match ho
-                filteredBills = sb.filter(b => b.date === formattedDate);
+                targetDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`; 
             }
 
-            // 4. Agar us din koi bill nahi hai toh message dikhayein
+            // Ab bills ko sirf targetDate ke hisaab se filter karein
+            let filteredBills = sb.filter(b => b.date === targetDate);
+
+            // Agar us date par koi bill nahi hai
             if (filteredBills.length === 0) {
                 tb.innerHTML = "<tr><td colspan='3' style='text-align:center; padding: 20px; color: #888;'>Is date par koi bill nahi hai.</td></tr>";
                 return;
             }
 
-            // 5. Filter kiye gaye bills ko table mein dikhana
+            // Filter kiye gaye bills ko list mein show karein
             filteredBills.reverse().forEach(b => {
                 tb.innerHTML += `<tr><td><b>#${b.billNo}</b></td><td style="font-weight:600; color:var(--ios-green);">₹ ${b.total}</td>
                 <td style="display:flex; gap:10px;">
