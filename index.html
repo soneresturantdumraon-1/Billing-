@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Sone Restaurant - Billing App</title>
     
+    <!-- Favicon (Browser Icon) -->
+    <link rel="icon" type="image/png" href="Sonelogo.png">
+    <link rel="apple-touch-icon" href="Sonelogo.png">
+    
     <link rel="manifest" href="manifest.json">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -26,7 +30,10 @@
         /* LOGIN SCREEN STYLES */
         #login-screen { position:fixed; top:0; left:0; width:100vw; height:100vh; background: #f4f5f7; z-index:9999; display:flex; align-items:center; justify-content:center; box-sizing:border-box; padding:20px; }
         .login-box { background: #ffffff; padding: 40px 25px; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.08); border: 1px solid rgba(0,0,0,0.05); width: 100%; max-width: 360px; text-align: center; box-sizing: border-box; }
-        .login-logo { width: 100px; height: 100px; border-radius: 50%; object-fit: cover; margin: 0 auto 20px auto; display: block; box-shadow: 0 10px 20px rgba(0,0,0,0.1); border: 3px solid #D32F2F; background: white; padding: 5px; }
+        
+        /* UPDATE: Login Logo Style - object-fit: contain ensures full logo is visible */
+        .login-logo { width: 120px; height: 120px; border-radius: 15px; object-fit: contain; margin: 0 auto 20px auto; display: block; box-shadow: 0 10px 20px rgba(0,0,0,0.1); border: 3px solid #D32F2F; background: white; padding: 10px; }
+        
         .login-input { width: 100%; padding: 14px 15px 14px 45px; border: 2px solid #E5E5EA; border-radius: 12px; box-sizing: border-box; font-size: 15px; background: #FFFFFF; outline: none; transition: border-color 0.3s; font-family: 'Poppins', sans-serif; color: #1C1C1E; font-weight: 500; }
         .login-input:focus { border-color: #1C1C1E; }
         .login-btn { width: 100%; padding: 15px; background: #1C1C1E; color: white; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; font-size: 16px; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2); transition: transform 0.2s; letter-spacing: 0.5px; margin-top: 10px; }
@@ -127,7 +134,7 @@
     <!-- 1. LOGIN SCREEN -->
     <div id="login-screen">
         <div class="login-box">
-            <!-- Logo from previous update -->
+            <!-- Login Page Logo - Sonelogo.png -->
             <img src="Sonelogo.png" alt="Sone Restaurant Logo" class="login-logo">
             
             <h2 style="margin:0 0 5px 0; color: #1C1C1E; font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 24px; text-transform: uppercase;">Sone</h2>
@@ -153,8 +160,8 @@
         <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
         <div class="sidebar" id="sidebar">
             <div style="padding: 20px; text-align: center; border-bottom: 1px solid #eee;">
-                <!-- Sidebar Logo -->
-                <img src="Sonelogo.png" alt="Logo" style="width: 60px; height: 60px; object-fit: cover; border-radius: 50%; border: 2px solid #D32F2F; margin-bottom: 10px;">
+                <!-- Sidebar Logo - Sonelogo1.png -->
+                <img src="Sonelogo1.png" alt="Logo" style="width: 80px; height: 80px; object-fit: contain; background: white; border-radius: 10px; border: 2px solid #D32F2F; margin-bottom: 10px; padding: 5px;">
                 <h2 style="margin:0; font-family:'Montserrat'; font-size:18px;">Sone Restaurant</h2>
             </div>
             <ul class="nav-links">
@@ -178,7 +185,9 @@
         </div>
         
         <div class="brand-banner">
-            <h1>Sone Restaurant</h1>
+            <!-- Title Bar Logo - Sonelogo1.png -->
+            <img src="Sonelogo1.png" alt="Sone Logo" style="height: 60px; object-fit: contain; margin-bottom: 5px;">
+            <h1 style="margin-top: 5px;">Sone Restaurant</h1>
             <p><i class="fas fa-map-marker-alt" style="color:#D32F2F;"></i> Dumraon Station Road, Dumraon</p>
         </div>
 
@@ -814,7 +823,7 @@
         }
 
         // ==========================================
-        // HISTORY FILTER LOGIC (UPDATED WITH ASCENDING ORDER #1, #2, #3...)
+        // HISTORY FILTER LOGIC
         // ==========================================
         function loadHistory() {
             let sb = JSON.parse(localStorage.getItem('sone_bills_isolated')) || [];
@@ -835,7 +844,6 @@
                 return;
             }
 
-            // UPDATE: .reverse() hata kar .sort() lagaya taaki 1, 2, 3 kram mein aaye
             filteredBills.sort((a, b) => a.billNo - b.billNo).forEach(b => {
                 tb.innerHTML += `<tr><td><b>#${b.billNo}</b></td><td style="font-weight:600; color:var(--ios-green);">₹ ${b.total}</td>
                 <td style="display:flex; gap:10px;">
