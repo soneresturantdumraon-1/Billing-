@@ -31,8 +31,8 @@
         #login-screen { position:fixed; top:0; left:0; width:100vw; height:100vh; background: #f4f5f7; z-index:9999; display:flex; align-items:center; justify-content:center; box-sizing:border-box; padding:20px; }
         .login-box { background: #ffffff; padding: 40px 25px; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.08); border: 1px solid rgba(0,0,0,0.05); width: 100%; max-width: 360px; text-align: center; box-sizing: border-box; }
         
-        /* UPDATE: Login Logo Style - object-fit: contain ensures full logo is visible */
-        .login-logo { width: 120px; height: 120px; border-radius: 15px; object-fit: contain; margin: 0 auto 20px auto; display: block; box-shadow: 0 10px 20px rgba(0,0,0,0.1); border: 3px solid #D32F2F; background: white; padding: 10px; }
+        /* UPDATE: Login Logo Style - Box, border, background hata diya gaya hai */
+        .login-logo { width: 140px; height: 140px; object-fit: contain; margin: 0 auto 15px auto; display: block; background: transparent; border: none; padding: 0; box-shadow: none; }
         
         .login-input { width: 100%; padding: 14px 15px 14px 45px; border: 2px solid #E5E5EA; border-radius: 12px; box-sizing: border-box; font-size: 15px; background: #FFFFFF; outline: none; transition: border-color 0.3s; font-family: 'Poppins', sans-serif; color: #1C1C1E; font-weight: 500; }
         .login-input:focus { border-color: #1C1C1E; }
@@ -134,7 +134,7 @@
     <!-- 1. LOGIN SCREEN -->
     <div id="login-screen">
         <div class="login-box">
-            <!-- Login Page Logo - Sonelogo.png -->
+            <!-- Login Page Logo - Sonelogo.png (No Box) -->
             <img src="Sonelogo.png" alt="Sone Restaurant Logo" class="login-logo">
             
             <h2 style="margin:0 0 5px 0; color: #1C1C1E; font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 24px; text-transform: uppercase;">Sone</h2>
@@ -160,8 +160,8 @@
         <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
         <div class="sidebar" id="sidebar">
             <div style="padding: 20px; text-align: center; border-bottom: 1px solid #eee;">
-                <!-- Sidebar Logo - Sonelogo1.png -->
-                <img src="Sonelogo1.png" alt="Logo" style="width: 80px; height: 80px; object-fit: contain; background: white; border-radius: 10px; border: 2px solid #D32F2F; margin-bottom: 10px; padding: 5px;">
+                <!-- Sidebar Logo - Sonelogo1.png (No Box) -->
+                <img src="Sonelogo1.png" alt="Logo" style="width: 100px; height: 100px; object-fit: contain; background: transparent; border: none; margin-bottom: 10px; padding: 0;">
                 <h2 style="margin:0; font-family:'Montserrat'; font-size:18px;">Sone Restaurant</h2>
             </div>
             <ul class="nav-links">
@@ -185,8 +185,8 @@
         </div>
         
         <div class="brand-banner">
-            <!-- Title Bar Logo - Sonelogo1.png -->
-            <img src="Sonelogo1.png" alt="Sone Logo" style="height: 60px; object-fit: contain; margin-bottom: 5px;">
+            <!-- Title Bar Logo - Sonelogo1.png (No Box) -->
+            <img src="Sonelogo1.png" alt="Sone Logo" style="height: 70px; object-fit: contain; background: transparent; border: none; margin-bottom: 5px;">
             <h1 style="margin-top: 5px;">Sone Restaurant</h1>
             <p><i class="fas fa-map-marker-alt" style="color:#D32F2F;"></i> Dumraon Station Road, Dumraon</p>
         </div>
@@ -210,7 +210,6 @@
                 </div>
 
                 <div class="card" style="display:flex; flex-direction:column;">
-                    <!-- Update: Bill No dalne ka manual option -->
                     <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--ios-separator); padding-bottom:10px; margin-bottom:10px;">
                         <h3 style="margin:0; font-size: 18px; color: var(--ios-text); font-weight: 700; display:flex; align-items:center; gap:8px;">
                             <i class="fas fa-file-invoice" style="color:var(--ios-orange);"></i> Current Bill
@@ -344,7 +343,6 @@
                 </div>
                 <div id="previewReceiptBox" style="margin-bottom: 20px; max-height: 50vh; overflow-y: auto; border: 1px solid #eee; padding: 5px;"></div>
                 
-                <!-- Update: Edit Bill button add kiya gaya hai -->
                 <button class="btn-clear" style="width:100%; margin-bottom:10px; border:1px solid var(--ios-blue); color:var(--ios-blue); background:#e6f2ff;" onclick="editExistingBill()"><i class="fas fa-edit"></i> Edit Bill</button>
                 
                 <button class="btn-add" style="width:100%; margin-bottom:10px; background:#1C1C1E;" onclick="downloadBillImage()"><i class="fas fa-image"></i> Download Photo</button>
@@ -456,7 +454,6 @@
                 
                 loadHistory();
                 
-                // Update Manual Bill No box sync ke baad bhi
                 let s = JSON.parse(localStorage.getItem('sone_bills_isolated')) || [];
                 if(s.filter(b=>b.date===displayDate).length > 0) { 
                     billCounter = Math.max(...s.filter(b=>b.date===displayDate).map(b=>b.billNo)) + 1; 
@@ -545,7 +542,7 @@
             if(s.filter(b=>b.date===displayDate).length > 0) { 
                 billCounter = Math.max(...s.filter(b=>b.date===displayDate).map(b=>b.billNo)) + 1; 
             }
-            document.getElementById('manualBillNo').value = billCounter; // Update: Bill Box default set
+            document.getElementById('manualBillNo').value = billCounter;
             
             loadHistory();
 
@@ -586,7 +583,7 @@
         document.getElementById("qtyInput").addEventListener("keydown", e => { if(e.key==="Enter") { e.preventDefault(); addItemToBill(); }});
 
         // ==========================================
-        // ADD ITEM LOGIC (H & FH UPDATE)
+        // ADD ITEM LOGIC 
         // ==========================================
         function addItemToBill() {
             let n = document.getElementById("itemInput").value;
@@ -612,11 +609,11 @@
             
             if (isHalf) {
                 if (!n.includes("(H)")) { 
-                    finalPrice = Math.round(p / 2); // 10 रुपये वाला लॉजिक हटाया
+                    finalPrice = Math.round(p / 2); 
                     finalName = n + " (Half)"; 
                 }
             } else if (isFullHalf) {
-                let halfPrice = Math.round(p / 2); // 10 रुपये वाला लॉजिक हटाया
+                let halfPrice = Math.round(p / 2); 
                 finalPrice = p + halfPrice; 
                 finalName = n + " (F+H)"; 
             }
@@ -643,7 +640,7 @@
 
             if(originalName.endsWith(" (Half)")) {
                 originalName = originalName.replace(" (Half)", "");
-                originalPrice = item.price * 2; // 10 रुपये वाला लॉजिक हटाया
+                originalPrice = item.price * 2; 
                 qtyVal = "H";
             } else if (originalName.endsWith(" (F+H)")) {
                 originalName = originalName.replace(" (F+H)", "");
@@ -699,7 +696,6 @@
             let bal = gt - disc - cash - online;
             if(bal > 0 && name === '') return alert("उधार के लिए नाम ज़रूरी है!");
             
-            // Update: Bill No. input se number uthana
             let finalUserBillNo = parseInt(document.getElementById('manualBillNo').value);
             if(isNaN(finalUserBillNo) || finalUserBillNo <= 0) {
                 finalUserBillNo = billCounter;
@@ -707,7 +703,6 @@
 
             let sb = JSON.parse(localStorage.getItem('sone_bills_isolated')) || [];
             
-            // Agar same number ka bill aaj exist karta hai toh naya bana dega takraav bachane ke liye (optional safeguard)
             let nB = { id: Date.now(), billNo: finalUserBillNo, date: displayDate, time: new Date().toLocaleTimeString('en-US', {hour:'2-digit',minute:'2-digit'}), items: JSON.parse(JSON.stringify(billItems)), total: gt, paid: cash+online, disc: disc, udhaar: bal>0?bal:0, custName: name };
             sb.push(nB); localStorage.setItem('sone_bills_isolated', JSON.stringify(sb));
 
@@ -717,7 +712,6 @@
             setTimeout(() => { 
                 window.print(); 
                 
-                // Update counter and display
                 billCounter = Math.max(billCounter, finalUserBillNo) + 1;
                 document.getElementById('manualBillNo').value = billCounter;
                 
@@ -799,21 +793,15 @@
             if(!currentPreviewBill) return;
             
             if(confirm("Kya aap is bill ko Edit karna chahte hain? (Naya save karne par purana wala list se hat jayega)")) {
-                // Bill items ko table mein load karna
                 billItems = JSON.parse(JSON.stringify(currentPreviewBill.items));
-                
-                // Manual bill box mein yahi purana number daalna
                 document.getElementById('manualBillNo').value = currentPreviewBill.billNo;
                 
-                // Purane bill ko history se mita dena taki dubara save karne pe duplicate na bane
                 let sb = JSON.parse(localStorage.getItem('sone_bills_isolated')) || [];
                 sb = sb.filter(b => b.id !== currentPreviewBill.id);
                 localStorage.setItem('sone_bills_isolated', JSON.stringify(sb));
                 
                 updateBillDisplay();
                 closePreviewModal();
-                
-                // User ko wapas Billing Tab par bhejna
                 openTab('billingTab', document.querySelector('.nav-links a:first-child'));
                 
                 syncWithCloud();
@@ -985,9 +973,6 @@
             }
         }
 
-        // ==========================================
-        // MENU PHOTO GENERATOR LOGIC
-        // ==========================================
         function downloadMenuPhoto() {
             alert("Menu ki photo ban rahi hai, kripya thoda intezaar karein...");
             
